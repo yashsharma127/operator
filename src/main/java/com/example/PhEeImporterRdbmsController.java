@@ -9,10 +9,7 @@ import io.fabric8.kubernetes.api.model.apps.DeploymentSpec;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
-import io.fabric8.kubernetes.api.model.SecretBuilder;
-import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.ServicePort;
-import io.fabric8.kubernetes.api.model.ServiceSpec;
+import io.fabric8.kubernetes.api.model.SecretBuilder; 
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
@@ -24,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.util.*;
+
 
 @ControllerConfiguration
 public class PhEeImporterRdbmsController implements Reconciler<PhEeImporterRdbms> {
@@ -37,9 +35,9 @@ public class PhEeImporterRdbmsController implements Reconciler<PhEeImporterRdbms
     public UpdateControl<PhEeImporterRdbms> reconcile(PhEeImporterRdbms resource, Context<PhEeImporterRdbms> context) {
         log.info("Reconciling PhEeImporterRdbms: {}", resource.getMetadata().getName());
 
+        // calling all the reconciliation methods and providing resource as an argument
         try {
-            reconcileDeployment(resource);
-            reconcileService(resource);
+            reconcileDeployment(resource); 
             reconcileSecret(resource);
             reconcileConfigMap(resource);
             reconcileServiceAccount(resource);
@@ -56,6 +54,7 @@ public class PhEeImporterRdbmsController implements Reconciler<PhEeImporterRdbms
     }
 
 
+    //Below are all the resource reconciliation methods
     private void reconcileDeployment(PhEeImporterRdbms resource) {
         Deployment deployment = createDeployment(resource);
         Resource<Deployment> deploymentResource = kubernetesClient.apps().deployments()
@@ -68,21 +67,6 @@ public class PhEeImporterRdbmsController implements Reconciler<PhEeImporterRdbms
         } else {
             deploymentResource.patch(deployment);
             log.info("Updated existing Deployment: {}", resource.getMetadata().getName());
-        }
-    }
-
-    private void reconcileService(PhEeImporterRdbms resource) {
-        Service service = createService(resource);
-        Resource<Service> serviceResource = kubernetesClient.services()
-                .inNamespace(resource.getMetadata().getNamespace())
-                .withName(resource.getMetadata().getName());
-
-        if (serviceResource.get() == null) {
-            serviceResource.create(service);
-            log.info("Created new Service: {}", resource.getMetadata().getName());
-        } else {
-            serviceResource.patch(service);
-            log.info("Updated existing Service: {}", resource.getMetadata().getName());
         }
     }
 
@@ -177,6 +161,9 @@ public class PhEeImporterRdbmsController implements Reconciler<PhEeImporterRdbms
         }
     }
 
+
+    //Below are all the resource creation methods
+
      private Deployment createDeployment(PhEeImporterRdbms resource) {
         Deployment deployment = new Deployment();
         deployment.setMetadata(resource.getMetadata());
@@ -187,7 +174,7 @@ public class PhEeImporterRdbmsController implements Reconciler<PhEeImporterRdbms
         PodTemplateSpec podTemplateSpec = new PodTemplateSpec();
         PodSpec podSpec = new PodSpec();
 
-        // Set up the container specificatio    ns based on the custom resource spec
+        // Set up the container specifications based on the custom resource spec
         Container container = new Container();
         container.setName(resource.getMetadata().getName());
         container.setImage(resource.getSpec().getImage());
@@ -246,21 +233,6 @@ public class PhEeImporterRdbmsController implements Reconciler<PhEeImporterRdbms
         deployment.setSpec(deploymentSpec);
 
         return deployment;
-    }
-
-    private Service createService(PhEeImporterRdbms resource) {
-        Service service = new Service();
-        service.setMetadata(resource.getMetadata());
-
-        ServiceSpec serviceSpec = new ServiceSpec();
-        serviceSpec.setSelector(Collections.singletonMap("app", resource.getMetadata().getName()));
-
-        ServicePort servicePort = new ServicePort();
-        servicePort.setPort(8000);
-        serviceSpec.setPorts(Collections.singletonList(servicePort));
-
-        service.setSpec(serviceSpec);
-        return service;
     }
 
     private Secret createSecret(PhEeImporterRdbms resource) {
