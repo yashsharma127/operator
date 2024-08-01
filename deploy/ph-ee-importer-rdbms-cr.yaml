@@ -1,8 +1,8 @@
-apiVersion: example.com/v1
+apiVersion: my.custom.group/v1
 kind: PhEeImporterRdbms
 metadata:
   name: sample-ph-ee-importer-rdbms
-  namespace: paymenthub
+  namespace: default
 spec:
   replicas: 1
   image: docker.io/openmf/ph-ee-importer-rdbms:v1.7.1
@@ -19,9 +19,9 @@ spec:
   resources:
     limits:
       cpu: 500m
-      memory: 512M
+      memory: 512Mi
     requests:
       cpu: 100m
-      memory: 256M
+      memory: 256Mi
   javaToolOptions: "-Xmx256M"
   bucketName: paymenthub-ee-dev
