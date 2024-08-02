@@ -1,4 +1,4 @@
-package com.example.operator;
+package com.example.customresource;
 
 import java.util.Objects;
 

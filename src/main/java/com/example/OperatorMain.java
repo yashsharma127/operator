@@ -4,7 +4,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.javaoperatorsdk.operator.Operator;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
-import com.example.operator.PhEeImporterRdbmsController;
+import com.example.PhEeImporterRdbmsController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

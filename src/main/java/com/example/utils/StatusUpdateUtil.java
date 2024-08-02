@@ -1,7 +1,7 @@
-package com.example.operator.util;
+package com.example.utils;
 
-import com.example.PhEeImporterRdbms;
-import com.example.operator.PhEeImporterRdbmsStatus;
+import com.example.customresource.PhEeImporterRdbms;
+import com.example.customresource.PhEeImporterRdbmsStatus;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import org.slf4j.Logger;

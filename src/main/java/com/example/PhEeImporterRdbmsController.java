@@ -1,4 +1,4 @@
-package com.example.operator;
+package com.example;
  
 // Kubernetes API model imports
 import io.fabric8.kubernetes.api.model.*;
@@ -20,9 +20,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 // Custom classes
-import com.example.PhEeImporterRdbms;
-import com.example.operator.util.LoggingUtil;
-import com.example.operator.util.StatusUpdateUtil;
+import com.example.customresource.PhEeImporterRdbms;
+import com.example.utils.LoggingUtil;
+import com.example.utils.StatusUpdateUtil;
 
 // utils
 import java.util.*;
