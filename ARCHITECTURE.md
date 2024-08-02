@@ -61,84 +61,84 @@ The PHEE Operator comprises several key components:
 
 ### Custom Resource Definition (CRD)
 
-**File**: `deploy/crds/ph-ee-importer-rdbms-crd.yaml`
+- **File**: `deploy/crds/ph-ee-importer-rdbms-crd.yaml`
 
-**Purpose**: This file contains the Custom Resource Definition (CRD) for the operator. The CRD defines the schema for the Custom Resources that will be managed by the operator.
+- **Purpose**: This file contains the Custom Resource Definition (CRD) for the operator. The CRD defines the schema for the Custom Resources that will be managed by the operator.
 
-**Details**:
-- Specifies fields such as `spec`, `status`, etc.
-- Defines validation criteria for each field.
+- **Details**:
+  - Specifies fields such as `spec`, `status`, etc.
+  - Defines validation criteria for each field.
 
 ### Custom Resource (CR)
 
-**File**: `deploy/cr/ph-ee-importer-rdbms-cr.yaml`
+- **File**: `deploy/cr/ph-ee-importer-rdbms-cr.yaml`
 
-**Purpose**: This file contains the Custom Resource (CR) script for the Importer RDBMS, which includes values for the fields defined in the CRD.
+- **Purpose**: This file contains the Custom Resource (CR) script for the Importer RDBMS, which includes values for the fields defined in the CRD.
 
-**Details**:
-- Contains fields defined in the CRD.
-- Specifies configuration parameters for the Importer RDBMS.
+- **Details**:
+  - Contains fields defined in the CRD.
+  - Specifies configuration parameters for the Importer RDBMS.
 
 ### Operator
 
-**Main File**: `src/main/java/com/example/operator/OperatorMain.java`
+- **Main File**: `src/main/java/com/example/operator/OperatorMain.java`
 
-**Purpose**: This is the main file for the operator. It registers the operator controller and starts the operator to apply the reconciliation logic.
+- **Purpose**: This is the main file for the operator. It registers the operator controller and starts the operator to apply the reconciliation logic.
 
-**Details**:
-- Initializes the Kubernetes client.
-- Registers custom resource schemas and controllers.
+- **Details**:
+  - Initializes the Kubernetes client.
+  - Registers custom resource schemas and controllers.
 
 ### Controller
 
-**File**: `src/main/java/com/example/operator/PhEeImporterRdbmsController.java`
+- **File**: `src/main/java/com/example/operator/PhEeImporterRdbmsController.java`
 
-**Purpose**: This file is the controller for the operator, containing the reconciliation logic for the Importer RDBMS deployment and its RBAC configurations. It uses the CR to create Kubernetes resource objects.
+- **Purpose**: This file is the controller for the operator, containing the reconciliation logic for the Importer RDBMS deployment and its RBAC configurations. It uses the CR to create Kubernetes resource objects.
 
-**Details**:
-- Watches for changes to custom resources.
-- Applies necessary changes to the cluster to match the desired state.
-- Handles error states and retries.
+- **Details**:
+  - Watches for changes to custom resources.
+  - Applies necessary changes to the cluster to match the desired state.
+  - Handles error states and retries.
 
 ### Custom Resource Classes
 
 #### PhEeImporterRdbms.java
 
-**File**: `src/main/java/com/example/customresource/PhEeImporterRdbms.java`
+- **File**: `src/main/java/com/example/customresource/PhEeImporterRdbms.java`
 
-**Purpose**: Defines the Custom Resource class according to the specification used in the controller file.
+- **Purpose**: Defines the Custom Resource class according to the specification used in the controller file.
 
 #### PhEeImporterRdbmsSpec.java
 
-**File**: `src/main/java/com/example/customresource/PhEeImporterRdbmsSpec.java`
+- **File**: `src/main/java/com/example/customresource/PhEeImporterRdbmsSpec.java`
 
-**Purpose**: Defines the specification for the operator, containing fields defined in the CRD and applied by the CRs.
+- **Purpose**: Defines the specification for the operator, containing fields defined in the CRD and applied by the CRs.
 
 #### PhEeImporterRdbmsStatus.java
 
-**File**: `src/main/java/com/example/customresource/PhEeImporterRdbmsStatus.java`
+- **File**: `src/main/java/com/example/customresource/PhEeImporterRdbmsStatus.java`
 
-**Purpose**: Defines the status fields for the Custom Resource, allowing the operator to communicate the current state of the resource.
+- **Purpose**: Defines the status fields for the Custom Resource, allowing the operator to communicate the current state of the resource.
 
 ### Utility Classes
 
 #### LoggingUtil.java
 
-**File**: `src/main/java/com/example/utils/LoggingUtil.java`
+- **File**: `src/main/java/com/example/utils/LoggingUtil.java`
 
-**Purpose**: Provides utility methods for logging within the operator.
+- **Purpose**: Provides utility methods for logging within the operator.
 
 #### StatusUpdateUtil.java
 
-**File**: `src/main/java/com/example/utils/StatusUpdateUtil.java`
+- **File**: `src/main/java/com/example/utils/StatusUpdateUtil.java`
 
-**Purpose**: Provides utility methods for updating the status of the Custom Resource.
+- **Purpose**: Provides utility methods for updating the status of the Custom Resource.
 
 ### pom.xml
 
-**File**: `pom.xml`
+- **File**: `pom.xml`
 
-**Purpose**: This file contains all the dependencies required for this project.
+- **Purpose**: This file contains all the dependencies required for this project.
 
 ## Deployment
 
