@@ -8,25 +8,25 @@ This document provides an in-depth overview of the architecture of the PHEE Oper
 PHEE-operator/
 ├── deploy/
 │   ├── cr/
-│   │   └── **ph-ee-importer-rdbms-cr.yaml**
+│   │   └── ph-ee-importer-rdbms-cr.yaml
 │   ├── crds/
-│   │   └── **ph-ee-importer-rdbms-crd.yaml**
+│   │   └── ph-ee-importer-rdbms-crd.yaml
 │   └── operator/
-│       └── **operator.yaml**
+│       └── operator.yaml
 ├── src/
 │   └── main/
 │       └── java/
 │           └── com/
 │               └── example/
 │                   ├── customresource/ 
-│                   │   ├── **PhEeImporterRdbms.java**
-│                   │   ├── **PhEeImporterRdbmsSpec.java**
-│                   │   └── **PhEeImporterRdbmsStatus.java**
+│                   │   ├── PhEeImporterRdbms.java
+│                   │   ├── PhEeImporterRdbmsSpec.java
+│                   │   └── PhEeImporterRdbmsStatus.java
 │                   ├── utils/
-|                   │   ├── **LoggingUtil.java **
-|                   │   └── **StatusUpdateUtil.java**
-│                   ├── **OperatorMain.java**
-|                   └── **PhEeImporterRdbmsController.java**
+|                   │   ├── LoggingUtil.java 
+|                   │   └── StatusUpdateUtil.java
+│                   ├── OperatorMain.java
+|                   └── PhEeImporterRdbmsController.java
 └── pom.xml 
 ```
 
@@ -41,9 +41,7 @@ PHEE-operator/
    - [Controller](#controller)
    - [Utility Classes](#utility-classes)
 4. [Deployment](#deployment)
-5. [Design Decisions](#design-decisions)
-6. [Future Enhancements](#future-enhancements)
-7. [Conclusion](#conclusion)
+5. [Design Decisions](#design-decisions) 
 
 ## Introduction
 
@@ -147,15 +145,13 @@ The PHEE Operator comprises several key components:
 The deployment of the PHEE Operator involves several steps:
 
 - **CRD Deployment**: Apply the CRD to the cluster.
-- **Operator Deployment**: Deploy the operator using a Deployment resource.
-- **RBAC Configuration**: Ensure the operator has necessary permissions.
+- **Operator Deployment**: Deploy the operator using a Deployment resource. 
 - **CR Deployment**: Create custom resources as needed.
 
 Deployment files:
 
 - **CRD**: `deploy/crds/ph-ee-importer-rdbms-crd.yaml`
-- **Operator Deployment**: `deploy/operator/operator.yaml`
-- **RBAC Configuration**: Included in the deployment file.
+- **Operator Deployment**: `deploy/operator/operator.yaml` 
 - **Custom Resource**: `deploy/cr/ph-ee-importer-rdbms-cr.yaml`
 
 ## Design Decisions
@@ -164,16 +160,7 @@ Deployment files:
 - **Framework**: Utilized the Java Operator SDK for streamlined development.
 - **CRD Structure**: Designed to be extensible and easy to validate.
 - **Controller Logic**: Focused on idempotency and robustness.
-
-## Future Enhancements
-
-- **Metrics Collection**: Integrate metrics to monitor operator performance.
-- **Auto-Scaling**: Implement auto-scaling based on resource usage.
-- **Advanced CRD Features**: Add support for additional CRD features like versioning.
-
-## Conclusion
-
-The PHEE Operator is designed to simplify the management of custom resources within a Kubernetes cluster. This architecture document provides a comprehensive overview of the components, design decisions, and future enhancements for the operator.
+  
 
 
 ### Note
