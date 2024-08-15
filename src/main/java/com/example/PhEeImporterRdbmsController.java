@@ -19,14 +19,15 @@ import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// Custom classes
+// Custom classes and utils
 import com.example.customresource.PhEeImporterRdbms;
 import com.example.utils.LoggingUtil;
 import com.example.utils.StatusUpdateUtil;
 import com.example.utils.ProbeUtils; 
 import com.example.utils.ResourceDeletionUtil;
 
-// utils
+// java utils
+import java.time.Instant;
 import java.util.*;
 
 
@@ -66,6 +67,7 @@ public class PhEeImporterRdbmsController implements Reconciler<PhEeImporterRdbms
                 reconcileClusterRoleBinding(resource);
                 reconcileRole(resource);
                 reconcileRoleBinding(resource);
+                reconcileService(resource);
             }
 
             // Check and reconcile Secrets
@@ -127,6 +129,9 @@ public class PhEeImporterRdbmsController implements Reconciler<PhEeImporterRdbms
                 .build())
             .withLivenessProbe(ProbeUtils.createProbe(resource, "liveness"))
             .withReadinessProbe(ProbeUtils.createProbe(resource, "readiness"))
+            .withPorts(new ContainerPortBuilder() // Add this section
+                .withContainerPort(8000)
+                .build())
             .build();
 
         // Create PodSpec with the defined container and volumes
@@ -157,11 +162,15 @@ public class PhEeImporterRdbmsController implements Reconciler<PhEeImporterRdbms
             .withTemplate(podTemplateSpec)
             .build();
 
+        // // Get the current timestamp for the deployTime annotation
+        // String deployTime = Instant.now().toString();
+
         // Create Deployment metadata with owner references
         ObjectMeta metadata = new ObjectMetaBuilder()
             .withName(resource.getMetadata().getName())
             .withNamespace(resource.getMetadata().getNamespace())
             .withLabels(labels)
+            // .withAnnotations(Collections.singletonMap("example.com/deployTime", deployTime))
             .withOwnerReferences(createOwnerReferences(resource))
             .build();
 
@@ -177,14 +186,15 @@ public class PhEeImporterRdbmsController implements Reconciler<PhEeImporterRdbms
         return Arrays.asList(
             new EnvVar("SPRING_PROFILES_ACTIVE", resource.getSpec().getSpringProfilesActive(), null),
             new EnvVar("DATASOURCE_CORE_USERNAME", resource.getSpec().getDatasource().getUsername(), null),
-            new EnvVar("DATASOURCE_CORE_PASSWORD", null, new EnvVarSourceBuilder().withNewSecretKeyRef("database-password", "importer-rdbms-secret", false).build()),
+            new EnvVar("DATASOURCE_CORE_PASSWORD", null, new EnvVarSourceBuilder().withNewSecretKeyRef("database-password", "ph-ee-importer-rdbms-secret", false).build()),
             new EnvVar("DATASOURCE_CORE_HOST", resource.getSpec().getDatasource().getHost(), null),
             new EnvVar("DATASOURCE_CORE_PORT", String.valueOf(resource.getSpec().getDatasource().getPort()), null),
             new EnvVar("DATASOURCE_CORE_SCHEMA", resource.getSpec().getDatasource().getSchema(), null),
             new EnvVar("LOGGING_LEVEL_ROOT", resource.getSpec().getLogging().getLevelRoot(), null),
             new EnvVar("LOGGING_PATTERN_CONSOLE", resource.getSpec().getLogging().getPatternConsole(), null),
             new EnvVar("JAVA_TOOL_OPTIONS", resource.getSpec().getJavaToolOptions(), null),
-            new EnvVar("APPLICATION_BUCKET_NAME", resource.getSpec().getBucketName(), null),
+            new EnvVar("APPLICATION_BUCKET-NAME", resource.getSpec().getBucketName(), null),
+            new EnvVar("CLOUD_AWS_S3BASEURL", "http://minio:9000", null),
             new EnvVar("CLOUD_AWS_REGION_STATIC", null, new EnvVarSourceBuilder().withNewSecretKeyRef("aws-region", "bulk-processor-secret", false).build()),
             new EnvVar("AWS_ACCESS_KEY", null, new EnvVarSourceBuilder().withNewSecretKeyRef("aws-access-key", "bulk-processor-secret", false).build()),
             new EnvVar("AWS_SECRET_KEY", null, new EnvVarSourceBuilder().withNewSecretKeyRef("aws-secret-key", "bulk-processor-secret", false).build())
@@ -205,6 +215,49 @@ public class PhEeImporterRdbmsController implements Reconciler<PhEeImporterRdbms
             .build();
     }
  
+
+// Reconcile Service
+private void reconcileService(PhEeImporterRdbms resource) {
+    String serviceName = resource.getMetadata().getName() + "-svc";
+    log.info("Reconciling Service for resource: {}", resource.getMetadata().getName());
+    Service service = createService(resource, serviceName);
+    log.info("Created Service spec: {}", service);
+
+    Resource<Service> serviceResource = kubernetesClient.services()
+            .inNamespace(resource.getMetadata().getNamespace())
+            .withName(serviceName);
+
+    if (serviceResource.get() == null) {
+        serviceResource.create(service);
+        log.info("Created new Service: {}", serviceName);
+    } else {
+        serviceResource.patch(service);
+        log.info("Updated existing Service: {}", serviceName);
+    }
+}
+
+private Service createService(PhEeImporterRdbms resource, String serviceName) {
+    log.info("Creating Service spec for resource: {}", resource.getMetadata().getName());
+
+    return new ServiceBuilder()
+            .withNewMetadata()
+                .withName(serviceName)
+                .withNamespace(resource.getMetadata().getNamespace())
+                .withLabels(Collections.singletonMap("app", resource.getMetadata().getName()))
+                .withOwnerReferences(createOwnerReferences(resource))
+            .endMetadata()
+            .withNewSpec()
+                .withSelector(Collections.singletonMap("app", resource.getMetadata().getName()))
+                .withPorts(new ServicePortBuilder()
+                    .withPort(8000)
+                    .withTargetPort(new IntOrString(8000))
+                    .build())
+                .withType("ClusterIP") // or "LoadBalancer" depending on your use case
+            .endSpec()
+            .build();
+}
+
+
 
 // Reconcile Secret
 private void reconcileSecret(PhEeImporterRdbms resource) {
