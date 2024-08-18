@@ -36,44 +36,44 @@ deploy_operator() {
     # 1. Pre-requisites Check
     echo -e "${BLUE}Checking pre-requisites...${NC}"
     # Check if kubectl, docker, mvn, and helm are installed
-    if ! command -v kubectl &> /dev/null || ! command -v docker &> /dev/null || ! command -v helm &> /dev/null
-    then
-        echo -e "${RED}kubectl, docker, and helm are required but not installed. Exiting.${NC}"
-        exit 1
-    fi
+    # if ! command -v kubectl &> /dev/null || ! command -v docker &> /dev/null || ! command -v helm &> /dev/null
+    # then
+    #     echo -e "${RED}kubectl, docker, and helm are required but not installed. Exiting.${NC}"
+    #     exit 1
+    # fi
 
-    # Check if Java is installed, if not, install it
-    if ! command -v java &> /dev/null
-    then
-        echo -e "${YELLOW}Java is not installed. Installing OpenJDK 21...${NC}"
-        sudo apt-get update
-        sudo apt-get install openjdk-21-jdk -y || { echo -e "${RED}Failed to install Java. Exiting.${NC}"; exit 1; }
-        echo -e "${GREEN}Java installed successfully.${NC}"
-    else
-        echo -e "${GREEN}Java is already installed.${NC}"
-    fi
+    # # Check if Java is installed, if not, install it
+    # if ! command -v java &> /dev/null
+    # then
+    #     echo -e "${YELLOW}Java is not installed. Installing OpenJDK 21...${NC}"
+    #     sudo apt-get update
+    #     sudo apt-get install openjdk-21-jdk -y || { echo -e "${RED}Failed to install Java. Exiting.${NC}"; exit 1; }
+    #     echo -e "${GREEN}Java installed successfully.${NC}"
+    # else
+    #     echo -e "${GREEN}Java is already installed.${NC}"
+    # fi
 
-    # Check if Maven is installed, if not, install it
-    if ! command -v mvn &> /dev/null
-    then
-        echo -e "${YELLOW}Maven is not installed. Installing Maven...${NC}"
-        sudo apt-get install maven -y || { echo -e "${RED}Failed to install Maven. Exiting.${NC}"; exit 1; }
-        echo -e "${GREEN}Maven installed successfully.${NC}"
-    else
-        echo -e "${GREEN}Maven is already installed.${NC}"
-    fi
+    # # Check if Maven is installed, if not, install it
+    # if ! command -v mvn &> /dev/null
+    # then
+    #     echo -e "${YELLOW}Maven is not installed. Installing Maven...${NC}"
+    #     sudo apt-get install maven -y || { echo -e "${RED}Failed to install Maven. Exiting.${NC}"; exit 1; }
+    #     echo -e "${GREEN}Maven installed successfully.${NC}"
+    # else
+    #     echo -e "${GREEN}Maven is already installed.${NC}"
+    # fi
 
     echo -e "${GREEN}Pre-requisites are met.${NC}"
 
     # 2. Check if there are any changes before upgrading the Helm chart
     echo -e "${BLUE}Checking for changes with Helm dry-run...${NC}"
-    if helm upgrade --dry-run --debug $RELEASE_NAME $HELM_CHART_PATH -n $HELM_NAMESPACE -f $VALUES_FILE | grep -q "unchanged"; then
-        echo -e "${YELLOW}No changes detected in Helm chart. Skipping upgrade.${NC}"
-    else
-        echo -e "${BLUE}Changes detected. Proceeding with Helm upgrade...${NC}"
-        helm upgrade $RELEASE_NAME $HELM_CHART_PATH -n $HELM_NAMESPACE -f $VALUES_FILE || { echo -e "${RED}Helm upgrade failed. Exiting.${NC}"; exit 1; }
-        echo -e "${GREEN}Helm chart upgrade successful.${NC}"
-    fi
+    # if helm upgrade --dry-run --debug $RELEASE_NAME $HELM_CHART_PATH -n $HELM_NAMESPACE -f $VALUES_FILE | grep -q "unchanged"; then
+    #     echo -e "${YELLOW}No changes detected in Helm chart. Skipping upgrade.${NC}"
+    # else
+    #     echo -e "${BLUE}Changes detected. Proceeding with Helm upgrade...${NC}"
+    #     helm upgrade $RELEASE_NAME $HELM_CHART_PATH -n $HELM_NAMESPACE -f $VALUES_FILE || { echo -e "${RED}Helm upgrade failed. Exiting.${NC}"; exit 1; }
+    #     echo -e "${GREEN}Helm chart upgrade successful.${NC}"
+    # fi
 
     # 3. Build the Java Project
     echo -e "${BLUE}Building the Java project...${NC}"
@@ -113,6 +113,7 @@ deploy_operator() {
     kubectl rollout status deployment/phee-importer-operator -n $OPERATOR_NAMESPACE || { echo -e "${RED}Deployment verification failed. Exiting.${NC}"; exit 1; }
 
     echo -e "${GREEN}${BOLD}Operator deployment completed successfully!${NC}"
+  
 }
 
 # Function to clean up the deployed resources
@@ -154,6 +155,34 @@ cleanup_operator() {
     echo -e "${GREEN}${BOLD}Cleanup completed successfully!${NC}"
 }
 
+update_cr () {
+        # Display script banner
+    echo -e "${BLUE}${BOLD}"
+    echo "===================================================="
+    echo "              Updating Custom Resource(CR)          "
+    echo "===================================================="
+    echo -e "${NC}"
+
+    echo -e "${BLUE}Updating CR...${NC}"
+    kubectl apply -f deploy/cr/ph-ee-importer-rdbms-cr.yaml
+    echo -e "${GREEN}CR applied successfully.${NC}"
+
+}
+
+update_operator () {
+        # Display script banner
+    echo -e "${BLUE}${BOLD}"
+    echo "===================================================="
+    echo "              Updating Operator Deployment          "
+    echo "===================================================="
+    echo -e "${NC}"
+
+    echo -e "${BLUE}Deploying the operator...${NC}"
+    kubectl apply -f deploy/operator/operator.yaml
+    echo -e "${GREEN}Operator deployed successfully.${NC}"
+
+}
+
 # Main script logic to handle different modes
 if [ "$1" == "-m" ]; then
     case "$2" in
@@ -168,12 +197,29 @@ if [ "$1" == "-m" ]; then
             exit 1
             ;;
     esac
+elif [ "$1" == "-u" ]; then
+    case "$2" in
+        cr)
+            update_cr
+            ;;
+        operator)
+            update_operator
+            ;;
+        *)
+            echo -e "${RED}Invalid update mode specified. Use '-u cr' or '-u operator'.${NC}"
+            exit 1
+            ;;
+    esac
 else
-    echo -e "${YELLOW}Usage: ./deploy-operator.sh -m <mode>${NC}"
+    echo -e "${YELLOW}Usage: ./deploy-operator.sh -m <mode> or ./deploy-operator.sh -u <update_mode>${NC}"
     echo "Modes:"
-    echo "  ${GREEN}deploy${NC}   - Upgrade Helm chart, build, deploy, and verify the operator."
-    echo "  ${GREEN}cleanup${NC}  - Remove the operator and related resources."
+    echo -e "  ${GREEN}deploy${NC}   - Upgrade Helm chart, build, deploy, and verify the operator."
+    echo -e "  ${GREEN}cleanup${NC}  - Remove the operator and related resources."
+    echo "Update Modes:"
+    echo -e "  ${GREEN}cr${NC}        - Apply updates to the Custom Resource (CR)."
+    echo -e "  ${GREEN}operator${NC}  - Apply updates to the operator deployment."
     exit 1
 fi
+
 
 # End of script

@@ -4,6 +4,9 @@ package com.example;
 import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.api.model.apps.*;
 import io.fabric8.kubernetes.api.model.rbac.*;
+import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
+import io.fabric8.kubernetes.api.model.networking.v1.IngressBuilder;
+import io.fabric8.kubernetes.api.model.networking.v1.IngressTLS;
 
 // Kubernetes client imports
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -29,6 +32,7 @@ import com.example.utils.ResourceDeletionUtil;
 // java utils
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @ControllerConfiguration
@@ -77,6 +81,22 @@ public class PhEeImporterRdbmsController implements Reconciler<PhEeImporterRdbms
             } else {
                 reconcileSecret(resource);
             } 
+
+            // Check and reconcile ConfigMaps
+            if (resource.getSpec().getconfigMapEnabled() == null || !resource.getSpec().getconfigMapEnabled()) {
+                log.info("ConfigMap for resource {} is disabled, deleting associated ConfigMap resources.", resourceName);
+                ResourceDeletionUtil.deleteConfigMapResources(kubernetesClient, resource);
+            } else {
+                reconcileConfigmap(resource);
+            }
+
+            // Check and reconcile Ingress
+            if (resource.getSpec().getingressEnabled() == null || !resource.getSpec().getingressEnabled()) {
+                log.info("Ingress for resource {} is disabled, deleting associated Ingress resources.", resourceName);
+                ResourceDeletionUtil.deleteIngressResources(kubernetesClient, resource);
+            } else {
+                reconcileIngress(resource);
+            }
 
             // Always reconcile the Deployment itself
             reconcileDeployment(resource);
@@ -257,6 +277,104 @@ private Service createService(PhEeImporterRdbms resource, String serviceName) {
             .build();
 }
 
+private void reconcileIngress(PhEeImporterRdbms resource) {
+    String ingressName = resource.getMetadata().getName() + "-ingress";
+    log.info("Reconciling Ingress for resource: {}", resource.getMetadata().getName());
+    
+    // Create Ingress
+    Ingress ingress = createIngress(resource, ingressName);
+    log.info("Created Ingress spec: {}", ingress);
+
+    Resource<Ingress> ingressResource = kubernetesClient.network().v1().ingresses()
+            .inNamespace(resource.getMetadata().getNamespace())
+            .withName(ingressName);
+
+    if (ingressResource.get() == null) {
+        ingressResource.create(ingress);
+        log.info("Created new Ingress: {}", ingressName);
+    } else {
+        ingressResource.patch(ingress);
+        log.info("Updated existing Ingress: {}", ingressName);
+    }
+}
+
+private Ingress createIngress(PhEeImporterRdbms resource, String ingressName) {
+    log.info("Creating Ingress spec for resource: {}", resource.getMetadata().getName());
+
+    // Extract values from the Custom Resource
+    String host = resource.getSpec().getIngress().getHost(); // e.g., "example.com"
+    String path = resource.getSpec().getIngress().getPath(); // e.g., "/opsapp"
+    String serviceName = resource.getMetadata().getName() + "-svc";
+    int servicePort = 8080; // Use the port defined in your values or configuration
+
+    // Convert custom TLS objects to Fabric8's IngressTLS
+    List<IngressTLS> ingressTlsList = resource.getSpec().getIngress().getTls().stream()
+        .map(tls -> new IngressTLS(tls.getHosts(), tls.getSecretName()))
+        .collect(Collectors.toList());
+
+    return new IngressBuilder()
+            .withNewMetadata()
+                .withName(ingressName)
+                .withNamespace(resource.getMetadata().getNamespace())
+                .withLabels(Collections.singletonMap("app", resource.getMetadata().getName()))
+                .withAnnotations(resource.getSpec().getIngress().getAnnotations()) // Use CR annotations
+                .withOwnerReferences(createOwnerReferences(resource))
+            .endMetadata()
+            .withNewSpec()
+                .withIngressClassName(resource.getSpec().getIngress().getClassName()) // Use CR ingressClassName
+                .withTls(ingressTlsList) // Use the converted TLS list
+                .addNewRule()
+                    .withHost(host)
+                    .withNewHttp()
+                        .addNewPath()
+                            .withPath(path)
+                            .withPathType("ImplementationSpecific") // Match with values
+                            .withNewBackend()
+                                .withNewService()
+                                    .withName(serviceName)
+                                    .withNewPort()
+                                        .withNumber(servicePort)
+                                    .endPort()
+                                .endService()
+                            .endBackend()
+                        .endPath()
+                    .endHttp()
+                .endRule()
+            .endSpec()
+            .build();
+}
+
+
+
+private void reconcileConfigmap(PhEeImporterRdbms resource) {
+    log.info("Reconciling ConfigMap for resource: {}", resource.getMetadata().getName());
+    ConfigMap configMap = createConfigMap(resource);
+    log.info("Created ConfigMap spec: {}", configMap);
+
+    Resource<ConfigMap> configMapResource = kubernetesClient.configMaps()
+            .inNamespace(resource.getMetadata().getNamespace())
+            .withName("ph-ee-config");
+
+    if (configMapResource.get() == null) {
+        configMapResource.create(configMap);
+        log.info("Created new ConfigMap: {}", "ph-ee-config");
+    } else {
+        configMapResource.patch(configMap);
+        log.info("Updated existing ConfigMap: {}", "ph-ee-config");
+    }
+}
+
+private ConfigMap createConfigMap(PhEeImporterRdbms resource) {
+    log.info("Creating ConfigMap spec for resource: {}", resource.getMetadata().getName());
+    return new ConfigMapBuilder()
+            .withNewMetadata()
+                .withName("ph-ee-config")
+                .withNamespace(resource.getMetadata().getNamespace())
+                .withOwnerReferences(createOwnerReferences(resource))
+            .endMetadata()
+            .addToData("config-file-name", "config-file-content") // Add actual config data
+            .build();
+}
 
 
 // Reconcile Secret
@@ -290,6 +408,7 @@ private Secret createSecret(PhEeImporterRdbms resource, String secretName) {
             .addToData("database-password", Base64.getEncoder().encodeToString(resource.getSpec().getDatasource().getPassword().getBytes()))
             .build();
 }
+
 
 // Reconcile ServiceAccount
 private void reconcileServiceAccount(PhEeImporterRdbms resource) {
