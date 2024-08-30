@@ -13,11 +13,15 @@ This is a Kubernetes (K8s) Operator setup built on top of the [Mifos-Gazelle scr
 
 ## Setup and Deployment
 
-To perform various operations, the script `deploy-operator.sh` supports multiple modes. Below are the available commands:
+To perform various operations, the script `deploy-operator.sh` supports multiple modes. 
+The script supports the following flags:
+- `-m Flag`: This is used to specify the mode of operation, such as deploy or cleanup.
+- `-u Flag`: This is used to specify the update mode, such as updating the cr (Custom Resource) or the operator deployment.
+Below are the available commands:
 
 ### 1. Deploy the Operator
 
-To build, deploy, and verify the operator in your k3s cluster:
+To build, deploy, and verify the operator and its required deployments using the CR in your k3s cluster:
 
 ```
 ./deploy-operator.sh -m deploy
@@ -52,9 +56,9 @@ To apply updates to the operator deployment:
 
 - Ensure the script is executable. If not, run `chmod +x deploy-operator.sh` to make it executable.
 - The script should be run from the directory where it is located.
-- The deploy mode will upgrade the Helm chart, build the Docker image, deploy the operator with its CRD and CR, and verify its status in the k3s cluster.
-- The cleanup mode will remove the operator and all its related resources, allowing for a fresh setup if needed.
-- The CR and operator update modes allow you to apply updates specifically to the CR or the operator deployment, respectively, without a full redeployment.
+- The `deploy` mode will upgrade the Helm chart, build the Docker image, deploy the operator with its CRD and CR, and verify its status in the k3s cluster.
+- The `cleanup` mode will remove the operator and all its related resources, allowing for a fresh setup if needed.
+- The `CR` and `operator` update modes allow you to apply updates specifically to the CR or the operator deployment, respectively, without a full redeployment.
 
 ### Note
 This file is still in progress will be updated as the project progresses.
