@@ -17,6 +17,7 @@ To perform various operations, the script `deploy-operator.sh` supports multiple
 The script supports the following flags:
 - `-m Flag`: This is used to specify the mode of operation, such as deploy or cleanup.
 - `-u Flag`: This is used to specify the update mode, such as updating the cr (Custom Resource) or the operator deployment.
+
 Below are the available commands:
 
 ### 1. Deploy the Operator
