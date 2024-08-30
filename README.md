@@ -1,46 +1,61 @@
-# Local Setup
+# PHEE Operator Local Setup
 
-This guide provides steps to set up the PHEE Operator in a k3s cluster. The current setup does not contain a Dockerfile. We use the Maven Jib plugin to build a Docker image, save that image to a .tar file, load it into the k3s cluster, and then apply the CRD, Operator, and CR.
+This guide provides instructions to set up the PHEE Operator in a k3s cluster using a provided script. The script simplifies the process of deploying, cleaning up, and updating the operator and its resources.
+
+### Note
+This is a Kubernetes (K8s) Operator setup built on top of the [Mifos-Gazelle script](https://github.com/openMF/mifos-gazelle). The operator is currently configured to deploy twelve deployments (with their ingress and service if needed) under the paymenthub deployment. The repository is actively being developed and tested to support more Mifos artifacts using the operator.
 
 ## Prerequisites
 
-- k3s cluster setup
-- Maven, JDK, kubectl, and Docker installed
+- Mifos-Gazelle script environment setup [here](https://github.com/openMF/mifos-gazelle).
+- Maven, JDK, kubectl, and Docker installed. The script covers the installation of these, but you may still want to check out the official documentation if needed.
+- Operator script file (`deploy-operator.sh`).
 
-## Steps
+## Setup and Deployment
 
-### 1. Install the Maven dependencies
+To perform various operations, the script `deploy-operator.sh` supports multiple modes. Below are the available commands:
 
-```
-mvn clean install
-```
+### 1. Deploy the Operator
 
-### 2. Creating local docker image using maven jib 
-
-```
-mvn compile jib:dockerBuild -Dimage=ph-ee-importer-rdbms-operator:latest
-```
-
-### 3. Save the Docker image to a tar file
+To build, deploy, and verify the operator in your k3s cluster:
 
 ```
-docker save ph-ee-importer-rdbms-operator:latest -o ph-ee-importer-rdbms-operator.tar
+./deploy-operator.sh -m deploy
 ```
 
-### 4. Load the tar file into k3s
+### 2. Clean Up the Operator
+
+To remove the operator and related resources from the k3s cluster:
 
 ```
-sudo k3s ctr images import ph-ee-importer-rdbms-operator.tar
+./deploy-operator.sh -m cleanup
 ```
 
-### 5. Apply CRD, Operator and Custom Resource
+### 3. Update the Custom Resource (CR)
+
+If you need to apply updates to the Custom Resource (CR):
 
 ```
-kubectl apply -f deploy/crds/ph-ee-importer-rdbms-crd.yaml
-kubectl apply -f deploy/operator/operator.yaml
-kubectl apply -f deploy/cr/ph-ee-importer-rdbms-cr.yaml
+./deploy-operator.sh -u cr
 ```
+or can also run `kubectl apply -f deploy/cr/ph-ee-importer-rdbms-cr.yaml` in the operator directory.
+
+### 4. Update the Operator Deployment
+
+To apply updates to the operator deployment:
+
+```
+./deploy-operator.sh -u operator
+```
+
+## Usage Information
+
+- Ensure the script is executable. If not, run `chmod +x deploy-operator.sh` to make it executable.
+- The script should be run from the directory where it is located.
+- The deploy mode will upgrade the Helm chart, build the Docker image, deploy the operator with its CRD and CR, and verify its status in the k3s cluster.
+- The cleanup mode will remove the operator and all its related resources, allowing for a fresh setup if needed.
+- The CR and operator update modes allow you to apply updates specifically to the CR or the operator deployment, respectively, without a full redeployment.
 
 ### Note
 This file is still in progress will be updated as the project progresses.
-Also, currently operator is configured for deploying importer-rdbms only
+Also, currently operator is configured for 12 deployments only, and not yet tested.
