@@ -28,12 +28,41 @@ spec:
                 enabled:
                   type: boolean
                   default: true
+                volMount:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: false
+                    name:
+                      type: string 
                 replicas:
                   type: integer
                 image:
                   type: string
+                containerPort:
+                  type: integer                  
                 springProfilesActive:
                   type: string
+                environment:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      value:
+                        type: string
+                      valueFrom:
+                        type: object
+                        properties:
+                          secretKeyRef:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              key:
+                                type: string                          
                 datasource:
                   type: object
                   properties:
@@ -105,15 +134,9 @@ spec:
                       type: integer
                     timeoutSeconds:
                       type: integer
-                                # New Ingress Configuration Section
-                ingress:
+                ingress:        # New Ingress Configuration Section 
                   type: object
-                  properties: 
-                    host:
-                      type: string
-                    path:
-                      type: string
-                      default: "/"
+                  properties:  
                     className:
                       type: string
                     annotations:
@@ -131,6 +154,77 @@ spec:
                               type: string
                           secretName:
                             type: string
+                    rules:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          host:
+                            type: string
+                          paths:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                path:
+                                  type: string
+                                pathType:
+                                  type: string
+                                backend:
+                                  type: object
+                                  properties:
+                                    service:
+                                      type: object
+                                      properties:
+                                        name:
+                                          type: string
+                                        port:
+                                          type: object
+                                          properties:
+                                            number:
+                                              type: integer
+                services:  # New Services Configuration Section
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      ports:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            port:
+                              type: integer
+                            targetPort:
+                              type: integer
+                            protocol:
+                              type: string
+                              enum:
+                                - TCP
+                                - UDP
+                      selector:
+                        type: object
+                        additionalProperties:
+                          type: string
+                      type:
+                        type: string
+                        enum:
+                          - ClusterIP
+                          - NodePort
+                          - LoadBalancer
+                      annotations:
+                        type: object
+                        additionalProperties:
+                          type: string
+                      sessionAffinity:
+                        type: string
+                        enum:
+                          - None
+                          - ClientIP                                        
                 rbacEnabled:  # Toggle for RBACs
                   type: boolean
                   default: false

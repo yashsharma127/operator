@@ -36,44 +36,39 @@ deploy_operator() {
     # 1. Pre-requisites Check
     echo -e "${BLUE}Checking pre-requisites...${NC}"
     # Check if kubectl, docker, mvn, and helm are installed
-    # if ! command -v kubectl &> /dev/null || ! command -v docker &> /dev/null || ! command -v helm &> /dev/null
-    # then
-    #     echo -e "${RED}kubectl, docker, and helm are required but not installed. Exiting.${NC}"
-    #     exit 1
-    # fi
+    if ! command -v kubectl &> /dev/null || ! command -v docker &> /dev/null || ! command -v helm &> /dev/null
+    then
+        echo -e "${RED}kubectl, docker, and helm are required but not installed. Exiting.${NC}"
+        exit 1
+    fi
 
-    # # Check if Java is installed, if not, install it
-    # if ! command -v java &> /dev/null
-    # then
-    #     echo -e "${YELLOW}Java is not installed. Installing OpenJDK 21...${NC}"
-    #     sudo apt-get update
-    #     sudo apt-get install openjdk-21-jdk -y || { echo -e "${RED}Failed to install Java. Exiting.${NC}"; exit 1; }
-    #     echo -e "${GREEN}Java installed successfully.${NC}"
-    # else
-    #     echo -e "${GREEN}Java is already installed.${NC}"
-    # fi
+    # Check if Java is installed, if not, install it
+    if ! command -v java &> /dev/null
+    then
+        echo -e "${YELLOW}Java is not installed. Installing OpenJDK 21...${NC}"
+        sudo apt-get update
+        sudo apt-get install openjdk-21-jdk -y || { echo -e "${RED}Failed to install Java. Exiting.${NC}"; exit 1; }
+        echo -e "${GREEN}Java installed successfully.${NC}"
+    else
+        echo -e "${GREEN}Java is already installed.${NC}"
+    fi
 
-    # # Check if Maven is installed, if not, install it
-    # if ! command -v mvn &> /dev/null
-    # then
-    #     echo -e "${YELLOW}Maven is not installed. Installing Maven...${NC}"
-    #     sudo apt-get install maven -y || { echo -e "${RED}Failed to install Maven. Exiting.${NC}"; exit 1; }
-    #     echo -e "${GREEN}Maven installed successfully.${NC}"
-    # else
-    #     echo -e "${GREEN}Maven is already installed.${NC}"
-    # fi
+    # Check if Maven is installed, if not, install it
+    if ! command -v mvn &> /dev/null
+    then
+        echo -e "${YELLOW}Maven is not installed. Installing Maven...${NC}"
+        sudo apt-get install maven -y || { echo -e "${RED}Failed to install Maven. Exiting.${NC}"; exit 1; }
+        echo -e "${GREEN}Maven installed successfully.${NC}"
+    else
+        echo -e "${GREEN}Maven is already installed.${NC}"
+    fi
 
     echo -e "${GREEN}Pre-requisites are met.${NC}"
 
     # 2. Check if there are any changes before upgrading the Helm chart
-    echo -e "${BLUE}Checking for changes with Helm dry-run...${NC}"
-    # if helm upgrade --dry-run --debug $RELEASE_NAME $HELM_CHART_PATH -n $HELM_NAMESPACE -f $VALUES_FILE | grep -q "unchanged"; then
-    #     echo -e "${YELLOW}No changes detected in Helm chart. Skipping upgrade.${NC}"
-    # else
-    #     echo -e "${BLUE}Changes detected. Proceeding with Helm upgrade...${NC}"
-    #     helm upgrade $RELEASE_NAME $HELM_CHART_PATH -n $HELM_NAMESPACE -f $VALUES_FILE || { echo -e "${RED}Helm upgrade failed. Exiting.${NC}"; exit 1; }
-    #     echo -e "${GREEN}Helm chart upgrade successful.${NC}"
-    # fi
+    echo -e "${BLUE}Upgrading the helm chart with ys_values.yaml...${NC}"
+    helm upgrade $RELEASE_NAME $HELM_CHART_PATH -n $HELM_NAMESPACE -f $VALUES_FILE || { echo -e "${RED}Helm upgrade failed. Exiting.${NC}"; exit 1; }
+
 
     # 3. Build the Java Project
     echo -e "${BLUE}Building the Java project...${NC}"
