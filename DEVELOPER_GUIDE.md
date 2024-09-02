@@ -2,28 +2,16 @@
 
 ## Table of Contents
 
-## How the Operator Works
+### How the Operator Works
 1. [Key Components](#key-components)
-   - [Custom Resource Definition (CRD) and Custom Resource (CR)](#custom-resource-definition-crd-and-custom-resource-cr)
-     - Custom Resource Definition (CRD)
-     - Custom Resource (CR)
-   - [Controller File](#controller-file)
-     - Purpose
-     - Function
-   - [Kind, Group, and Versioning](#kind-group-and-versioning)
-     - Kind
-     - Group
-     - Versioning
+   - [Custom Resource Definition (CRD) and Custom Resource (CR)](#custom-resource-definition-crd-and-custom-resource-cr) 
+   - [Controller File](#controller-file) 
+   - [Kind, Group, and Versioning](#kind-group-and-versioning) 
 
-## Explanation of Each File and Their Role
-1. [CRD-CR](#crd-cr)
-   - [Custom Resource Definition (CRD) Fields](#custom-resource-definition-crd-fields)
-     - Metadata
-     - Spec
-     - Schema (openAPIV3Schema)
-     - Status
+### Explanation of Files
+1. [Custom Resource Definition (CRD)](#custom-resource-definition-crd) 
 2. [operator.yaml File](#operatoryaml-file)
-3. [Java Files](#java-files)
+3. [Custom Resource Files](#java-files)
    - [PhEeImporterRdbms.java File](#pheimporterrdbmsjava-file)
    - [PhEeImporterRdbmsSpec.java File](#pheimporterrdbmsspecjava-file)
 4. [Utility Classes](#utility-classes)
@@ -37,13 +25,7 @@
    - [StatusUpdateUtil.java File](#statusupdateutiljava-file)
 5. [OperatorMain.java File](#operatormainjava-file)
 6. [PhEeImporterRdbmsController.java File](#pheimporterrdbmscontrollerjava-file)
-
-## deploy-operator.sh
-1. [Key Functions](#key-functions)
-   - Deploy Operator
-   - Cleanup Operator
-   - Update CR and Operator
-
+7. [deploy-operator.sh](#deploy-operator.sh) 
 
 ## How the Operator Works
 
@@ -80,15 +62,11 @@ To start making changes to the PHEE Operator, it's crucial to understand several
 
 
 
-## Explanation of Each File and Their Role
+## Explanation of Files
 
-Starting with the deployment files:
-
-### CRD-CR
+## Custom Resource Definition (CRD)
 
 Our CRD for the operator contains all the fields that our controller file might need to maintain the desired state of the cluster. It defines the structure and validation rules for the custom resources, ensuring that the custom resources adhere to the specified format and contain all necessary information for the operator to function correctly.
-
-## Custom Resource Definition (CRD) Fields
 
 ### Metadata
 
