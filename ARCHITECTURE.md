@@ -8,36 +8,36 @@ This document provides an in-depth overview of the architecture of the PHEE Oper
 PHEE-operator/
 ├── deploy/
 │   ├── cr/
-│   │   └── ph-ee-importer-rdbms-cr.yaml
+│   │   └── ph-ee-CustomResource.yaml
 │   ├── crds/
-│   │   └── ph-ee-importer-rdbms-crd.yaml
+│   │   └── ph-ee-CustomResourceDefinition.yaml
 │   └── operator/
-│       └── operator.yaml
+│       └── operator_deployment_manifests.yaml
 ├── src/
 │   └── main/
 │       └── java/
 │           └── com/
 │               └── paymenthub/
 │                   ├── customresource/ 
-│                   │   ├── PhEeImporterRdbms.java
-│                   │   ├── PhEeImporterRdbmsSpec.java
-│                   │   └── PhEeImporterRdbmsStatus.java 
+│                   │   ├── PaymentHubDeployment.java
+│                   │   ├── PaymentHubDeploymentSpec.java
+│                   │   └── PaymentHubDeploymentStatus.java 
 │                   ├── utils/
 |                   │   ├── DeletionUtil.java 
 |                   │   ├── DeploymentUtils.java 
 |                   │   ├── LoggingUtil.java 
-|                   │   ├── OwnerReferenceUtils.java 
 |                   │   ├── NetworkingUtils.java 
+|                   │   ├── OwnerReferenceUtils.java 
 |                   │   ├── RbacUtils.java 
 |                   │   ├── ResourceUtils.java 
 |                   │   └── StatusUpdateUtil.java
 │                   ├── OperatorMain.java
-|                   └── PhEeImporterRdbmsController.java
+|                   └── PaymentHubDeploymentController.java
 ├── ARCHITECTURE.md
 ├── deploy-operator.sh 
+├── DEVELOPER_GUIDE.md
 ├── pom.xml
 ├── README.md 
-├── DEVELOPER_GUIDE.md
 └── ys_values.md
 ```
 
@@ -75,7 +75,7 @@ The PHEE Operator comprises several key components:
 
 ### Custom Resource Definition (CRD)
 
-- **File**: `deploy/crds/ph-ee-importer-rdbms-crd.yaml`
+- **File**: `deploy/crds/ph-ee-CustomResourceDefinition.yaml`
 
 - **Purpose**: Defines the schema and structure for Custom Resources managed by the operator.
 
@@ -85,7 +85,7 @@ The PHEE Operator comprises several key components:
 
 ### Custom Resource (CR)
 
-- **File**: `deploy/cr/ph-ee-importer-rdbms-cr.yaml`
+- **File**: `deploy/cr/ph-ee-CustomResource.yaml`
 
 - **Purpose**: Defines the actual Custom Resource instances, detailing the specific configuration for around 12 deployments under the paymenthub.
 
@@ -95,7 +95,7 @@ The PHEE Operator comprises several key components:
 
 ### Operator
 
-- **Main File**: `src/main/java/com/example/operator/OperatorMain.java`
+- **Main File**: `src/main/java/com/paymenthub/operator/OperatorMain.java`
 
 - **Purpose**: Serves as the entry point for the operator, responsible for initializing the operator and registering the controller that handles CR lifecycle management.
 
@@ -105,7 +105,7 @@ The PHEE Operator comprises several key components:
 
 ### Controller
 
-- **File**: `src/main/java/com/example/operator/PhEeImporterRdbmsController.java`
+- **File**: `src/main/java/com/paymenthub/operator/PaymentHubDeploymentController.java`
 
 - **Purpose**: Implements the logic for reconciling the desired state of Custom Resources with the actual state in the cluster, ensuring that deployments are created and maintained according to the specifications in the CR.
 
@@ -117,21 +117,21 @@ The PHEE Operator comprises several key components:
 
 ### Custom Resource Classes
 
-#### PhEeImporterRdbms.java
+#### PaymentHubDeployment.java
 
-- **File**: `src/main/java/com/example/customresource/PhEeImporterRdbms.java`
+- **File**: `src/main/java/com/paymenthub/customresource/PaymentHubDeployment.java`
 
 - **Purpose**: Defines the Custom Resource class according to the specification used in the controller file.
 
-#### PhEeImporterRdbmsSpec.java
+#### PaymentHubDeploymentSpec.java
 
-- **File**: `src/main/java/com/example/customresource/PhEeImporterRdbmsSpec.java`
+- **File**: `src/main/java/com/paymenthub/customresource/PaymentHubDeploymentSpec.java`
 
 - **Purpose**: Defines the specification for the operator, containing fields defined in the CRD and applied by the CRs.
 
-#### PhEeImporterRdbmsStatus.java
+#### PaymentHubDeploymentStatus.java
 
-- **File**: `src/main/java/com/example/customresource/PhEeImporterRdbmsStatus.java`
+- **File**: `src/main/java/com/paymenthub/customresource/PaymentHubDeploymentStatus.java`
 
 - **Purpose**: Defines the status fields for the Custom Resource, allowing the operator to communicate the current state of the resource.
 
@@ -139,25 +139,25 @@ The PHEE Operator comprises several key components:
 
 #### LoggingUtil.java
 
-- **File**: `src/main/java/com/example/utils/LoggingUtil.java`
+- **File**: `src/main/java/com/paymenthub/utils/LoggingUtil.java`
 
 - **Purpose**: Provides utility methods for logging within the operator.
 
 #### ProbeUtils.java
 
-- **File**: `src/main/java/com/example/utils/ProbeUtils.java`
+- **File**: `src/main/java/com/paymenthub/utils/ProbeUtils.java`
 
 - **Purpose**: Provides helper methods for adding probes to the deployment.
 
 #### ResourceDeletionUtil.java
 
-- **File**: `src/main/java/com/example/utils/ResourceDeletionUtil.java`
+- **File**: `src/main/java/com/paymenthub/utils/ResourceDeletionUtil.java`
 
 - **Purpose**: Provides helper methods to delete the deployment and its RBACs according to toggle enable/disable in Custom Resource.
 
 #### StatusUpdateUtil.java
 
-- **File**: `src/main/java/com/example/utils/StatusUpdateUtil.java`
+- **File**: `src/main/java/com/paymenthub/utils/StatusUpdateUtil.java`
 
 - **Purpose**: Provides utility methods for updating the status of the Custom Resource.
 
@@ -179,9 +179,9 @@ Follow steps in [README.md](./README.md)
 
 Deployment files:
 
-- **CRD**: `deploy/crds/ph-ee-importer-rdbms-crd.yaml`
-- **Operator Deployment**: `deploy/operator/operator.yaml` 
-- **Custom Resource**: `deploy/cr/ph-ee-importer-rdbms-cr.yaml`
+- **CRD**: `deploy/crds/ph-ee-CustomResourceDefinition.yaml`
+- **Operator Deployment**: `deploy/operator/operator_deployment_manifests.yaml` 
+- **Custom Resource**: `deploy/cr/ph-ee-CustomResource.yaml`
 
 ## Design Decisions
 

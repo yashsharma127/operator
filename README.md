@@ -32,7 +32,7 @@ The `deploy-operator.sh` script supports various modes of operation:
 - `-m Flag`: Specifies the mode, such as `deploy` or `cleanup`.
 - `-u Flag`: Specifies the update mode, such as updating the CR or the operator deployment.
 
-### 1. Deploy the Operator
+#### 1. Deploy the Operator
 
 To build, deploy, and verify the operator and its required deployments:
 
