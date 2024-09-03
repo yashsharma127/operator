@@ -10,7 +10,7 @@ This is a Kubernetes (K8s) Operator setup built on top of the [Mifos-Gazelle scr
 - [Prerequisites](#prerequisites)
 - [Setup and Deployment](#setup-and-deployment)
   - [Using the Automated Script](#using-the-automated-script) 
-  - [Manual Setup](#manual-setup) 
+  - [Manual Setup](#Using-the-Manual-Setup) 
 - [Usage Information](#usage-information)
   - [Note](#note-1)
 
@@ -32,7 +32,7 @@ The `deploy-operator.sh` script supports various modes of operation:
 - `-m Flag`: Specifies the mode, such as `deploy` or `cleanup`.
 - `-u Flag`: Specifies the update mode, such as updating the CR or the operator deployment.
 
-#### 1. Deploy the Operator
+### 1. Deploy the Operator
 
 To build, deploy, and verify the operator and its required deployments:
 
@@ -40,7 +40,7 @@ To build, deploy, and verify the operator and its required deployments:
 ./deploy-operator.sh -m deploy
 ```
 
-### 2. Clean Up the Operator
+#### 2. Clean Up the Operator
 
 To remove the operator and related resources from the k3s cluster:
 
@@ -48,7 +48,7 @@ To remove the operator and related resources from the k3s cluster:
 ./deploy-operator.sh -m cleanup
 ```
 
-### 3. Update the Custom Resource (CR)
+#### 3. Update the Custom Resource (CR)
 
 If you need to apply updates to the Custom Resource (CR):
 
@@ -56,7 +56,7 @@ If you need to apply updates to the Custom Resource (CR):
 ./deploy-operator.sh -u cr
 ``` 
 
-### 4. Update the Operator Deployment
+#### 4. Update the Operator Deployment
 
 To apply updates to the operator deployment:
 
@@ -64,7 +64,7 @@ To apply updates to the operator deployment:
 ./deploy-operator.sh -u operator
 ```
 
-### Using the Automated Script
+### Using the Manual Setup
 
 If you prefer to manually set up the operator without using the script, follow these steps:
 
@@ -103,7 +103,7 @@ kubectl apply -f deploy/cr/ph-ee-CustomResource.yaml
 - The `cleanup` mode will remove the operator and all its related resources, allowing for a fresh setup if needed.
 - The `CR` and `operator` update modes allow you to apply updates specifically to the CR or the operator deployment, respectively, without a full redeployment.
 
-### Note
+## Note
 - The repository is actively being developed and tested to support more Mifos artifacts using the operator.
 - The operator is currently configured to deploy twelve specific deployments only.
 - This documentation will be updated as the project progresses.
