@@ -1,26 +1,22 @@
-apiVersion: my.custom.group/v1
-kind: PhEeImporterRdbms
+apiVersion: gazelle.mifos.io/v1
+kind: PaymentHubDeployment
 metadata:
   name: ph-ee-importer-rdbms
   namespace: paymenthub
 spec:
+  labels:
+    namespace: paymenthub
   enabled: true
+  rbacEnabled: false  # Toggle for RBACs (optional, ensure it's necessary)
+  secretEnabled: true  # Toggle for Secrets (relevant due to the usage of secrets in the deployment)
+  configMapEnabled: false  # not working due to non dynamic naming,,, Enabled to match the usage of the ConfigMap `ph-ee-config`
+  ingressEnabled: false  # Ingress not mentioned, keep as false unless required
   volMount:
     enabled: true
     name: ph-ee-config
   replicas: 1
   image: docker.io/openmf/ph-ee-importer-rdbms:v1.13.1   
-  containerPort: 8000
-  springProfilesActive: local,tenantsConnection
-  datasource:
-    username: mifos
-    password: password
-    host: operationsmysql
-    port: 3306
-    schema: tenants
-  logging:
-    levelRoot: INFO
-    patternConsole: "%d{dd-MM-yyyy HH:mm:ss.SSS} %magenta([%thread]) %highlight(%-5level) %logger.%M - %msg%n"
+  containerPort: 8000  
   resources:
     limits:
       cpu: 500m
@@ -28,8 +24,6 @@ spec:
     requests:
       cpu: 100m
       memory: 256M
-  javaToolOptions: "-Xmx256M"
-  bucketName: paymenthub-ee
   environment:  # Added environment field
     - name: SPRING_PROFILES_ACTIVE
       value: local,tenantsConnection
@@ -71,48 +65,31 @@ spec:
         secretKeyRef:
           name: bulk-processor-secret
           key: aws-secret-key
-  rbacEnabled: false  # Toggle for RBACs (optional, ensure it's necessary)
-  secretEnabled: true  # Toggle for Secrets (relevant due to the usage of secrets in the deployment)
-  configMapEnabled: false  # not working due to non dynamic naming,,, Enabled to match the usage of the ConfigMap `ph-ee-config`
-  ingressEnabled: false  # Ingress not mentioned, keep as false unless required
 
 ---
 
-apiVersion: my.custom.group/v1
-kind: PhEeImporterRdbms
+apiVersion: gazelle.mifos.io/v1
+kind: PaymentHubDeployment
 metadata:
   name: ph-ee-importer-es
   namespace: paymenthub
 spec:
   enabled: true
+  rbacEnabled: false  # Default value, please update if RBAC is enabled
+  secretEnabled: false
+  configMapEnabled: false  # Set to false based on your describe output
+  ingressEnabled: false  # Set to false as ingress is not mentioned
   volMount:
     enabled: false 
   replicas: 1 # Default value, please update if different
   image: docker.io/openmf/ph-ee-importer-es:v1.14.0
-  containerPort:  8080
-  springProfilesActive: test
-  datasource:
-    username: test
-    password: test # Set to the key 'password' in secret 'elastic-credentials'
-    host: test
-    port: 1010
-    schema: test # Not provided, please specify if applicable
-  logging:
-    levelRoot: INFO
-    patternConsole: "%d{dd-MM-yyyy HH:mm:ss.SSS} %magenta([%thread]) %highlight(%-5level) %logger.%M - %msg%n"
   resources:
     limits:
       cpu: 500m
       memory: 512M
     requests:
       cpu: 100m
-      memory: 256M
-  javaToolOptions: "-Xmx256M"
-  bucketName: test # Not provided, please specify if applicable
-  rbacEnabled: false  # Default value, please update if RBAC is enabled
-  secretEnabled: false
-  configMapEnabled: false  # Set to false based on your describe output
-  ingressEnabled: false  # Set to false as ingress is not mentioned
+      memory: 256M 
   environment:
     - name: LOGGING_LEVEL_ROOT
       value: "INFO"
@@ -139,29 +116,23 @@ spec:
 
 ---
 
-apiVersion: my.custom.group/v1
-kind: PhEeImporterRdbms
+apiVersion: gazelle.mifos.io/v1
+kind: PaymentHubDeployment
 metadata:
   name: ph-ee-connector-mock-payment-schema
   namespace: paymenthub
 spec:
   enabled: true
+  rbacEnabled: false  # Default value, please update if RBAC is enabled
+  secretEnabled: false
+  configMapEnabled: false  # Enabled based on the use of ConfigMap ph-ee-config
+  ingressEnabled: true  # Set to false as ingress is not mentioned
   volMount:
     enabled: true
     name: ph-ee-config
   replicas: 1  # Default value, please update if different
   image: docker.io/openmf/ph-ee-connector-mock-payment-schema:v1.6.0
   containerPort: 8080
-  springProfilesActive: bb
-  datasource:
-    username: test # Not provided in the describe, please specify if applicable
-    password: test # Not provided in the describe, please specify if applicable
-    host: phee-zeebe-gateway
-    port: 1010
-    schema: test # Not provided, please specify if applicable
-  logging:
-    levelRoot: INFO
-    patternConsole: test # Not provided in the describe, please specify if applicable
   resources:
     limits:
       cpu: 500m
@@ -169,12 +140,65 @@ spec:
     requests:
       cpu: 100m
       memory: 256M
-  javaToolOptions: test # Not provided in the describe, please specify if applicable
-  bucketName: test # Not provided, please specify if applicable
-  rbacEnabled: false  # Default value, please update if RBAC is enabled
-  secretEnabled: false
-  configMapEnabled: false  # Enabled based on the use of ConfigMap ph-ee-config
-  ingressEnabled: false  # Set to false as ingress is not mentioned
+  ingress:
+    className: nginx
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      meta.helm.sh/release-name: phee
+      meta.helm.sh/release-namespace: paymenthub
+    tls:
+      - hosts:
+          - mockpayment.local
+        secretName: sandbox-secret
+    rules:
+      - host: mockpayment.local
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: ph-ee-connector-mock-payment-schema
+                port:
+                  number: 80
+          # - path: "/actuator"
+          #   pathType: ImplementationSpecific
+          #   backend:
+          #     service:
+          #       name: ph-ee-connector-mock-payment-schema
+          #       port:
+          #         number: 8080
+  services:
+    - name: ph-ee-connector-mock-payment-schema
+      ports:
+        - name: port
+          port: 8080
+          targetPort: 8080
+          protocol: TCP
+        # - name: actuator
+        #   port: 8080
+        #   targetPort: 8080
+        #   protocol: TCP
+      selector:
+        app: ph-ee-connector-mock-payment-schema
+      type: LoadBalancer
+      annotations:
+        meta.helm.sh/release-name: phee
+        meta.helm.sh/release-namespace: paymenthub
+      sessionAffinity: None
+  # livenessProbe:
+  #   path: "/actuator/health/liveness"
+  #   port: 8080
+  #   initialDelaySeconds: 20
+  #   periodSeconds: 30
+  #   failureThreshold: 3
+  #   timeoutSeconds: 1
+  # readinessProbe:
+  #   path: "/actuator/health/readiness"
+  #   port: 8080
+  #   initialDelaySeconds: 20
+  #   periodSeconds: 30
+  #   failureThreshold: 3
+  #   timeoutSeconds: 1
   environment:
     - name: SPRING_PROFILES_ACTIVE
       value: "bb"
@@ -193,29 +217,23 @@ spec:
 
 ---
 
-apiVersion: my.custom.group/v1
-kind: PhEeImporterRdbms
+apiVersion: gazelle.mifos.io/v1
+kind: PaymentHubDeployment
 metadata:
   name: ph-ee-connector-gsma
   namespace: paymenthub
 spec:
   enabled: true
+  rbacEnabled: false  # Default value, please update if RBAC is enabled
+  secretEnabled: false
+  configMapEnabled: false  # Enabled based on the use of ConfigMap ph-ee-config
+  ingressEnabled: false  # Set to false as ingress is not mentioned
   volMount:
     enabled: true
     name: ph-ee-config
   replicas: 1  # Default value, please update if different
   image: docker.io/openmf/ph-ee-connector-gsma:v1.3.0
   containerPort: 5000
-  springProfilesActive: test
-  datasource:
-    username: test # Not provided in the describe, please specify if applicable
-    password: test # Not provided in the describe, please specify if applicable
-    host: test
-    port: 1010
-    schema: test # Not provided, please specify if applicable
-  logging:
-    levelRoot: test # Not provided in the describe, please specify if applicable
-    patternConsole: test # Not provided in the describe, please specify if applicable
   resources:
     limits:
       cpu: 500m
@@ -223,12 +241,25 @@ spec:
     requests:
       cpu: 100m
       memory: 256M
-  javaToolOptions: test # Not provided in the describe, please specify if applicable
-  bucketName:  # Not provided, please specify if applicable
-  rbacEnabled: false  # Default value, please update if RBAC is enabled
-  secretEnabled: false
-  configMapEnabled: false  # Enabled based on the use of ConfigMap ph-ee-config
-  ingressEnabled: false  # Set to false as ingress is not mentioned
+  services:
+    - name: ph-ee-connector-gsma
+      ports:
+        - name: port
+          port: 80
+          targetPort: 5000
+          protocol: TCP
+        - name: actuator
+          port: 8080
+          targetPort: 8080
+          protocol: TCP
+      selector:
+        app: ph-ee-connector-gsma
+      type: ClusterIP
+      annotations:
+        meta.helm.sh/release-name: phee
+        meta.helm.sh/release-namespace: paymenthub
+      sessionAffinity: None
+
   environment:
     - name: SPRING_PROFILES_ACTIVE
       value: "bb"
@@ -237,29 +268,24 @@ spec:
 
 ---
 
-apiVersion: my.custom.group/v1
-kind: PhEeImporterRdbms
+apiVersion: gazelle.mifos.io/v1
+kind: PaymentHubDeployment
 metadata:
   name: ph-ee-operations-app
   namespace: paymenthub
 spec:
   enabled: true
+  rbacEnabled: false
+  secretEnabled: true
+  configMapEnabled: false
+  ingressEnabled: true
+  initContainerEnabled: true
   volMount:
     enabled: true
     name: ph-ee-config
   replicas: 1
   image: docker.io/openmf/ph-ee-operations-app:v1.17.1
-  containerPort: 5000
-  springProfilesActive: bb
-  datasource:
-    username: mifos
-    password: password # Set via the 'operations-app-secret' Secret
-    host: operationsmysql
-    port: 3306
-    schema: tenants
-  logging:
-    levelRoot: INFO
-    patternConsole: "%d{dd-MM-yyyy HH:mm:ss.SSS} %magenta([%thread]) %highlight(%-5level) %logger.%M - %msg%n"
+  containerPort: 5000 
   resources:
     limits:
       cpu: 500m
@@ -267,12 +293,6 @@ spec:
     requests:
       cpu: 100m
       memory: 256M
-  javaToolOptions:  # Not provided, please specify if applicable
-  bucketName:  # Not provided, please specify if applicable
-  rbacEnabled: false
-  secretEnabled: true
-  configMapEnabled: false
-  ingressEnabled: true
   ingress:
     className: nginx
     annotations:
@@ -329,39 +349,25 @@ spec:
     - name: LOGGING_PATTERN_CONSOLE
       value: "%d{dd-MM-yyyy HH:mm:ss.SSS} %magenta([%thread]) %highlight(%-5level) %logger.%M - %msg%n"
 
-  # initContainers:
-  #   - name: wait-db
-  #     image: jwilder/dockerize
-  #     args:
-  #       - -timeout=120s
-  #       - -wait
-  #       - tcp://operationsmysql:3306
-
 ---
 
-apiVersion: my.custom.group/v1
-kind: PhEeImporterRdbms
+apiVersion: gazelle.mifos.io/v1
+kind: PaymentHubDeployment
 metadata:
   name: ph-ee-connector-mojaloop-java
   namespace: paymenthub
 spec:
   enabled: true
+  rbacEnabled: false  # Adjust based on your use case
+  secretEnabled: false  # Based on pod describe (secret references in environment variables)
+  configMapEnabled: false  # Based on volume mount with ConfigMap
+  ingressEnabled: true
   volMount:
     enabled: true
     name: ph-ee-config
   replicas: 1  # Assuming one replica based on the Pod describe
   image: docker.io/openmf/ph-ee-connector-mojaloop:v1.5.0
-  containerPort: 5000  # Based on the pod describe
-  springProfilesActive: bb  # Based on environment variables provided
-  datasource:
-    username: test # Not provided; please specify
-    password: test # Not provided; please specify
-    host: test # Not provided; please specify
-    port: 1010 # Not provided; please specify
-    schema: test # Not provided; please specify
-  logging:
-    levelRoot: INFO  # Assuming default; adjust as needed
-    patternConsole: "%d{dd-MM-yyyy HH:mm:ss.SSS} %magenta([%thread]) %highlight(%-5level) %logger.%M - %msg%n"
+  containerPort: 5000  # Based on the pod describe# Based on environment variables provided
   resources:
     limits:
       cpu: 500m
@@ -369,12 +375,6 @@ spec:
     requests:
       cpu: 100m
       memory: 256M
-  javaToolOptions:  # Not provided; please specify if applicable
-  bucketName:  # Not provided; please specify if applicable
-  rbacEnabled: false  # Adjust based on your use case
-  secretEnabled: false  # Based on pod describe (secret references in environment variables)
-  configMapEnabled: true  # Based on volume mount with ConfigMap
-  ingressEnabled: true
   ingress:
     className: nginx
     annotations:
@@ -445,29 +445,23 @@ spec:
 
 ---
 
-apiVersion: my.custom.group/v1
-kind: PhEeImporterRdbms  # or the appropriate kind name for your resource
+apiVersion: gazelle.mifos.io/v1
+kind: PaymentHubDeployment  # or the appropriate kind name for your resource
 metadata:
   name: ph-ee-connector-crm
   namespace: paymenthub
 spec:
   enabled: true
+  rbacEnabled: false  # Assuming based on previous CR, please confirm
+  secretEnabled: false  # Assuming based on previous CR, please confirm
+  configMapEnabled: false  # Enabled due to `ph-ee-config` volume mount
+  ingressEnabled: true
   volMount:
     enabled: true
     name: ph-ee-config  # Based on the Pod describe
   replicas: 1  # Assuming only one replica based on the Pod describe
   image: docker.io/openmf/ph-ee-connector-crm:v1.1.0  # From the Pod describe
-  containerPort: 8080  # From the Pod describe
-  springProfilesActive: bb,tenants  # From the environment variables in Pod describe
-  datasource:
-    username: test # Not provided; please specify
-    password: test # Not provided; please specify
-    host: test # Not provided; please specify
-    port: 1010 # Not provided; please specify
-    schema: test # Not provided; please specify
-  logging:
-    levelRoot: INFO  # Assuming INFO level logging; adjust if needed
-    patternConsole: "%d{dd-MM-yyyy HH:mm:ss.SSS} %magenta([%thread]) %highlight(%-5level) %logger.%M - %msg%n"
+  containerPort: 8080  # From the Pod describeenants  # From the environment variables in Pod describe
   resources:
     limits:
       cpu: 500m  # From the Pod describe
@@ -475,12 +469,6 @@ spec:
     requests:
       cpu: 100m  # From the Pod describe
       memory: 256M  # From the Pod describe
-  javaToolOptions:  # Not provided, please specify if applicable
-  bucketName:  # Not provided, please specify if applicable
-  rbacEnabled: false  # Assuming based on previous CR, please confirm
-  secretEnabled: true  # Assuming based on previous CR, please confirm
-  configMapEnabled: true  # Enabled due to `ph-ee-config` volume mount
-  ingressEnabled: true
   ingress:
     className: nginx  # From Ingress describe
     annotations:
@@ -522,29 +510,23 @@ spec:
 
 ---
 
-apiVersion: my.custom.group/v1
-kind: PhEeImporterRdbms
+apiVersion: gazelle.mifos.io/v1
+kind: PaymentHubDeployment
 metadata:
   name: ph-ee-connector-bill-pay
   namespace: paymenthub
 spec:
   enabled: true
+  rbacEnabled: false  # Defaulted, change if necessary
+  secretEnabled: false  # Defaulted, change if necessary
+  configMapEnabled: false  # Based on the volume mount from Pod Describe
+  ingressEnabled: true  # Ingress details are provided
   volMount:
     enabled: true
     name: ph-ee-config  # Derived from Pod Describe
   replicas: 1  # Defaulting to 1, adjust if needed
   image: docker.io/openmf/ph-ee-bill-pay:v1.1.0
-  containerPort: 8080  # Based on Pod Describe and Service Port
-  springProfilesActive: bb,tenants  # From environment variables in Pod Describe
-  datasource:
-    username: mifos
-    password: password
-    host: operationsmysql
-    port: 3306
-    schema: voucher_management
-  logging:
-    levelRoot: INFO
-    patternConsole: test # Not provided, please specify if needed
+  containerPort: 8080  # Based on Pod Describe and Service Portenants  # From environment variables in Pod Describe
   resources:
     limits:
       cpu: 500m
@@ -552,10 +534,6 @@ spec:
     requests:
       cpu: 100m
       memory: 256M
-  rbacEnabled: false  # Defaulted, change if necessary
-  secretEnabled: false  # Defaulted, change if necessary
-  configMapEnabled: false  # Based on the volume mount from Pod Describe
-  ingressEnabled: true  # Ingress details are provided
   ingress:
     className: nginx
     annotations:
@@ -600,29 +578,23 @@ spec:
 
 ---
 
-apiVersion: my.custom.group/v1
-kind: PhEeImporterRdbms
+apiVersion: gazelle.mifos.io/v1
+kind: PaymentHubDeployment
 metadata:
   name: ph-ee-vouchers
   namespace: paymenthub
 spec:
   enabled: true
+  rbacEnabled: false
+  secretEnabled: false
+  configMapEnabled: false
+  ingressEnabled: true
   volMount:
     enabled: true
     name: ph-ee-config
   replicas: 1
   image: docker.io/openmf/ph-ee-vouchers:v1.3.1
-  containerPort: 8080
-  springProfilesActive: bb
-  datasource:
-    username: mifos
-    password: password
-    host: operationsmysql
-    port: 3306
-    schema: voucher_management
-  logging:
-    levelRoot: INFO
-    patternConsole: test # Not provided, please specify if needed
+  containerPort: 8080 
   resources:
     limits:
       cpu: 500m
@@ -630,12 +602,6 @@ spec:
     requests:
       cpu: 100m
       memory: 256M
-  javaToolOptions: test # Not provided, please specify if applicable
-  bucketName: test # Not provided, please specify if applicable
-  rbacEnabled: false
-  secretEnabled: false
-  configMapEnabled: false
-  ingressEnabled: true
   ingress:
     className: nginx
     annotations:
@@ -714,28 +680,22 @@ spec:
 
 ---
 
-apiVersion: my.custom.group/v1
-kind: PhEeImporterRdbms
+apiVersion: gazelle.mifos.io/v1
+kind: PaymentHubDeployment
 metadata:
   name: ph-ee-zeebe-ops
   namespace: paymenthub
 spec:
   enabled: true
+  rbacEnabled: false
+  secretEnabled: false  # Secret is being used for Elasticsearch credentials
+  configMapEnabled: false  # Assuming not used, modify if needed
+  ingressEnabled: true
   volMount:
     enabled: false
   replicas: 1
   image: docker.io/openmf/ph-ee-zeebe-ops:v1.4.0
-  containerPort: 5000
-  springProfilesActive: # Not provided, specify if needed
-  datasource:
-    username: mifos
-    password: password
-    host: operationsmysql
-    port: 3306
-    schema: test  # Not applicable here, remove or specify if needed
-  logging:
-    levelRoot: INFO
-    patternConsole: # Not provided, specify if needed
+  containerPort: 5000 
   resources:
     limits:
       cpu: 500m
@@ -743,12 +703,6 @@ spec:
     requests:
       cpu: 100m
       memory: 256M
-  javaToolOptions: test # Not provided, specify if needed
-  bucketName: test # Not provided, specify if needed
-  rbacEnabled: false
-  secretEnabled: false  # Secret is being used for Elasticsearch credentials
-  configMapEnabled: false  # Assuming not used, modify if needed
-  ingressEnabled: true
   ingress:
     className: nginx
     annotations:
@@ -817,29 +771,24 @@ spec:
 
 ---
 
-apiVersion: my.custom.group/v1
-kind: PhEeImporterRdbms
+apiVersion: gazelle.mifos.io/v1
+kind: PaymentHubDeployment
 metadata:
   name: ph-ee-connector-ams-mifos
   namespace: paymenthub
 spec:
   enabled: true
+  rbacEnabled: false
+  secretEnabled: false  # Assuming secrets are used; adjust if needed.
+  configMapEnabled: false  # Enabled based on the volumes section in the pod describe.
+  ingressEnabled: true
+  initContainerEnabled: true
   volMount:
     enabled: true
     name: ph-ee-config
   replicas: 1
   image: docker.io/openmf/ph-ee-connector-ams-mifos:v1.7.0
-  containerPort: 5000
-  springProfilesActive: fin12,bb
-  datasource:
-    username: mifos  # Not specified in the describes, please confirm.
-    password: password  # Not specified in the describes, should be set via a secret if applicable.
-    host: operationsmysql  # From the init container args.
-    port: 3306  # From the init container args.
-    schema: tenants  # Not specified in the describes, please confirm.
-  logging:
-    levelRoot: INFO  # Example value; adjust if needed.
-    patternConsole: "%d{dd-MM-yyyy HH:mm:ss.SSS} %magenta([%thread]) %highlight(%-5level) %logger.%M - %msg%n"  # Example value; adjust if needed.
+  containerPort: 50002 
   resources:
     limits:
       cpu: 500m  # Example value; adjust if needed.
@@ -847,12 +796,6 @@ spec:
     requests:
       cpu: 100m  # Example value; adjust if needed.
       memory: 256M  # Example value; adjust if needed.
-  javaToolOptions: test # Not specified in the describes, please confirm if applicable.
-  bucketName: test # Not specified in the describes, please confirm if applicable.
-  rbacEnabled: false
-  secretEnabled: false  # Assuming secrets are used; adjust if needed.
-  configMapEnabled: false  # Enabled based on the volumes section in the pod describe.
-  ingressEnabled: true
   ingress:
     className: nginx
     annotations:
@@ -912,29 +855,23 @@ spec:
 
 ---
 
-apiVersion: my.custom.group/v1
-kind: PhEeImporterRdbms
+apiVersion: gazelle.mifos.io/v1
+kind: PaymentHubDeployment
 metadata:
   name: ph-ee-connector-channel
   namespace: paymenthub
 spec:
   enabled: true
+  rbacEnabled: false
+  secretEnabled: false
+  configMapEnabled: false
+  ingressEnabled: true
   volMount:
     enabled: true
     name: ph-ee-config
   replicas: 1
   image: docker.io/openmf/ph-ee-connector-channel:v1.11.0
   containerPort: 8443
-  springProfilesActive: bb,tenants
-  datasource:
-    username: mifos  # Not specified in the describes, please confirm.
-    password: password  # Not specified in the describes, should be set via a secret if applicable.
-    host: operationsmysql  # From the init container args.
-    port: 3306  # From the init container args.
-    schema: tenants  # Not specified in the describes, please confirm.
-  logging:
-    levelRoot: INFO
-    patternConsole: "%d{dd-MM-yyyy HH:mm:ss.SSS} %magenta([%thread]) %highlight(%-5level) %logger.%M - %msg%n"
   resources:
     limits:
       cpu: 500m
@@ -942,12 +879,6 @@ spec:
     requests:
       cpu: 100m
       memory: 256M
-  javaToolOptions: test # Not provided, please specify if applicable
-  bucketName: test # Not provided, please specify if applicable
-  rbacEnabled: false
-  secretEnabled: false
-  configMapEnabled: false
-  ingressEnabled: true
   ingress:
     className: nginx
     annotations:
@@ -1040,4 +971,378 @@ spec:
       value: "password"
     - name: server_ssl_key-store-password
       value: "password"
+
+---
+
+# apiVersion: gazelle.mifos.io/v1
+# kind: PaymentHubDeployment
+# metadata:
+#   name: ph-ee-operations-web
+#   namespace: paymenthub
+# spec:
+#   enabled: true
+#   volMount:
+#     enabled: true
+#     name: ph-ee-operations-web-config
+#   replicas: 1
+#   image: docker.io/openmf/ph-ee-operations-web:v1.20.0
+#   containerPort: 80
+#   resources:
+#     limits:
+#       cpu: 500m
+#       memory: 512M
+#     requests:
+#       cpu: 100m
+#       memory: 256M
+#   rbacEnabled: false
+#   secretEnabled: true
+#   configMapEnabled: true
+#   ingressEnabled: true
+#   ingress:
+#     className: nginx
+#     annotations:
+#       meta.helm.sh/release-name: phee
+#       meta.helm.sh/release-namespace: paymenthub
+#     tls:
+#       - secretName: sandbox-secret
+#     rules:
+#       - host: ops.local
+#         paths:
+#           - path: "/"
+#             pathType: ImplementationSpecific
+#             backend:
+#               service:
+#                 name: "ph-ee-operations-web"
+#                 port:
+#                   number: 4200
+#   services:
+#     - name: ph-ee-operations-web
+#       ports:
+#         - name: port
+#           port: 4200
+#           targetPort: 80
+#           protocol: TCP
+#       selector:
+#         app: ph-ee-operations-web
+#       sessionAffinity: None
+#       type: ClusterIP
+#   environment:
+#     - name: PH_OPS_BACKEND_SERVER_URL
+#       value: "http://ph-ee-operations-app"
+#     - name: PH_VOU_BACKEND_SERVER_URL
+#       value: "http://ph-ee-vouchers"
+#     - name: PH_ACT_BACKEND_SERVER_URL
+#       value: "http://ph-ee-identity-account-mapper"
+#     - name: PH_PLATFORM_TENANT_ID
+#       value: "gorilla"
+#     - name: PH_PLATFORM_TENANT_IDS
+#       value: "gorilla"
+#     - name: PH_REGISTERING_INSTITUTION_ID
+#       value: "123"
+#     - name: PH_AUTH_ENABLED
+#       value: "false"
+#     - name: PH_OAUTH_ENABLED
+#       value: "false"
+#     - name: PH_OAUTH_TYPE
+#       value: "keycloak"
+#     - name: PH_OAUTH_SERVER_URL
+#       value: "http://keycloak.sandbox.fynarfin.io/auth"
+#     - name: PH_OAUTH_REALM
+#       value: "paymenthub"
+#     - name: PH_OAUTH_CLIENT_ID
+#       value: "opsapp"
+#     - name: PH_OAUTH_CLIENT_SECRET
+#       value: "Y2xpZW50Og=="
+#     - name: PH_OAUTH_BASIC_AUTH
+#       value: "true"
+#     - name: PH_OAUTH_BASIC_AUTH_TOKEN
+#       value: "Y2xpZW50Og=="
+#     - name: PH_DEFAULT_LANGUAGE
+#       value: "en"
+#     - name: PH_SUPPORTED_LANGUAGES
+#       value: "en,fr,es"
+
+# ---
+
+# apiVersion: gazelle.mifos.io/v1
+# kind: PaymentHubDeployment
+# metadata:
+#   name: ph-ee-connector-notifications
+#   namespace: paymenthub
+# spec:
+#   enabled: true
+#   volMount:
+#     enabled: false # Please confirm or adjust this section 
+#   replicas: 1
+#   image: docker.io/openmf/ph-ee-notifications:v1.4.0
+#   containerPort: 5000
+#   resources:
+#     limits:
+#       cpu: 500m # Adjust if different
+#       memory: 512M # Adjust if different
+#     requests:
+#       cpu: 100m # Adjust if different
+#       memory: 256M # Adjust if different
+#   rbacEnabled: false
+#   secretEnabled: true
+#   configMapEnabled: false
+#   ingressEnabled: true
+#   ingress:
+#     className: nginx
+#     annotations:
+#       kubernetes.io/ingress.class: nginx
+#     tls:
+#       - secretName: sandbox-secret
+#     rules:
+#       - host: notifications.local
+#         paths:
+#           - path: "/"
+#             pathType: ImplementationSpecific
+#             backend:
+#               service:
+#                 name: "ph-ee-connector-notifications"
+#                 port:
+#                   number: 80
+#   services:
+#     - name: ph-ee-connector-notifications
+#       ports:
+#         - name: port
+#           port: 80
+#           targetPort: 5000
+#           protocol: TCP
+#         - name: actuator
+#           port: 8080
+#           targetPort: 8080
+#           protocol: TCP
+#       selector:
+#         app: ph-ee-connector-notifications
+#       sessionAffinity: None
+#       type: ClusterIP
+#   environment:
+#     - name: SPRING_PROFILES_ACTIVE
+#       value: 
+#     - name: ZEEBE_BROKER_CONTACTPOINT
+#       value: "phee-zeebe-gateway:26500"
+#     - name: HOSTCONFIG_HOST
+#       value: "message-gateway"
+#     - name: HOSTCONFIG_PORT
+#       value: "80"
+#     - name: MESSAGEGATEWAYCONFIG_HOST
+#       value: "message-gateway"
+#     - name: NOTIFICATION_LOCAL_HOST
+#       value: "connector-notifications"
+#     - name: NOTIFICATION_SUCCESS_ENABLED
+#       value: "false"
+#     - name: NOTIFICATION_FAILURE_ENABLED
+#       value: "false"
+#     - name: LOGGING_LEVEL_ROOT
+#       value: "INFO"
+
+
+# ---
+
+# apiVersion: gazelle.mifos.io/v1
+# kind: PaymentHubDeployment
+# metadata:
+#   name: ph-ee-connector-bulk
+#   namespace: paymenthub
+# spec:
+#   enabled: true
+#   volMount:
+#     enabled: true
+#     name: ph-ee-config
+#   replicas: 1
+#   image: docker.io/openmf/ph-ee-bulk-processor:v1.12.1
+#   containerPort: 5000
+#   resources:
+#     limits:
+#       cpu: 256m
+#       memory: 384M
+#     requests:
+#       cpu: 100m
+#       memory: 256M
+#   rbacEnabled: false  # Assuming RBAC is not enabled; adjust if needed
+#   secretEnabled: true
+#   configMapEnabled: true
+#   ingressEnabled: true
+#   ingress:
+#     className: nginx
+#     annotations:
+#       kubernetes.io/ingress.class: nginx
+#       konghq.com/plugins: cors
+#       meta.helm.sh/release-name: phee
+#       meta.helm.sh/release-namespace: paymenthub
+#     tls:
+#       - secretName: sandbox-secret
+#     rules:
+#       - host: bulk-connector.local
+#         paths:
+#           - path: "/"
+#             pathType: ImplementationSpecific
+#             backend:
+#               service:
+#                 name: "ph-ee-connector-bulk"
+#                 port:
+#                   number: 8443
+#   services:
+#     - name: ph-ee-connector-bulk
+#       ports:
+#         - name: port
+#           port: 8443
+#           targetPort: 8443
+#           protocol: TCP
+#       selector:
+#         app: ph-ee-connector-bulk
+#       sessionAffinity: None
+#       type: ClusterIP
+#   environment:
+#     - name: SPRING_PROFILES_ACTIVE
+#       value: "bb"
+#     - name: CAMEL_DISABLE-SSL
+#       value: "true"
+#     - name: ZEEBE_BROKER_CONTACTPOINT
+#       value: "phee-zeebe-gateway:26500"
+#     - name: ZEEBE_CLIENT_MAX-EXECUTION-THREADS
+#       value: "50"
+#     - name: ZEEBE_CLIENT_POLL-INTERVAL
+#       value: "10"
+#     - name: TENANTS
+#       value: "rhino,gorilla,wakanda,pluto,venus,jupiter"
+#     - name: APPLICATION_BUCKET-NAME
+#       value: "paymenthub-ee"
+#     - name: OPERATIONS-APP_CONTACTPOINT
+#       value: "http://ph-ee-operations-app:80"
+#     - name: OPERATIONS-APP_ENDPOINTS_BATCH-TRANSACTION
+#       value: "/api/v1/batch/transactions"
+#     - name: CONFIG_PARTYLOOKUP_ENABLE
+#       value: "false"
+#     - name: CONFIG_APPROVAL_ENABLE
+#       value: "false"
+#     - name: CONFIG_ORDERING_ENABLE
+#       value: "false"
+#     - name: CONFIG_SPLITTING_ENABLE
+#       value: "true"
+#     - name: CONFIG_SPLITTING_SUB_BATCH_SIZE
+#       value: "5"
+#     - name: CONFIG_FORMATTING_ENABLE
+#       value: "false"
+#     - name: CONFIG_FORMATTING_STANDARD
+#       value: "DEFAULT"
+#     - name: CONFIG_MERGEBACK_ENABLE
+#       value: "true"
+#     - name: CONFIG_BACKPRESSURE_ENABLE
+#       value: "false"
+#     - name: CONFIG_COMPLETION-THRESHOLD-CHECK_ENABLE
+#       value: "true"
+#     - name: CONFIG_COMPLETION-THRESHOLD-CHECK_COMPLETION-RATE
+#       value: "95"
+#     - name: CLOUD_AWS_REGION_STATIC
+#       valueFrom:
+#         secretKeyRef:
+#           name: bulk-processor-secret
+#           key: aws-region
+#     - name: BP_JAVA_OPTS
+#       value: "-Xmx400m -Xms400m"
+#     - name: CLOUD_AWS_S3BASEURL
+#       value: "http://minio:9000"
+#     - name: AWS_ACCESS_KEY
+#       valueFrom:
+#         secretKeyRef:
+#           name: bulk-processor-secret
+#           key: aws-access-key
+#     - name: AWS_SECRET_KEY
+#       valueFrom:
+#         secretKeyRef:
+#           name: bulk-processor-secret
+#           key: aws-secret-key
+#     - name: IDENTITY_MAPPER_CONTACTPOINT
+#       value: "http://ph-ee-identity-account-mapper:80"
+
+# ---
+
+# apiVersion: gazelle.mifos.io/v1
+# kind: PaymentHubDeployment
+# metadata:
+#   name: message-gateway
+#   namespace: paymenthub
+# spec:
+#   enabled: true
+#   volMount:
+#     enabled: true
+#     name: ph-ee-config  # This is from the pod description.
+#   replicas: 1
+#   image: docker.io/openmf/message-gateway:v1.2.0  # From the pod description.
+#   containerPort: 9191  # From the pod description.
+#   resources:
+#     limits:
+#       cpu: 500m
+#       memory: 512M
+#     requests:
+#       cpu: 100m
+#       memory: 256M 
+#   rbacEnabled: false
+#   secretEnabled: true
+#   configMapEnabled: false
+#   ingressEnabled: true
+#   ingress:
+#     className: nginx  # From ingress description.
+#     annotations:
+#       kubernetes.io/ingress.class: nginx
+#     tls:
+#       - secretName: sandbox-secret  # From ingress description.
+#     rules:
+#       - host: messagegateway.local  # From ingress description.
+#         paths:
+#           - path: "/"
+#             pathType: ImplementationSpecific
+#             backend:
+#               service:
+#                 name: "message-gateway"
+#                 port:
+#                   number: 80  # From service description.
+#   services:
+#     - name: message-gateway
+#       ports:
+#         - name: port
+#           port: 80
+#           targetPort: 9191  # From service description.
+#           protocol: TCP
+#       selector:
+#         app: message-gateway
+#       sessionAffinity: None
+#       type: ClusterIP
+#   environment:
+#     - name: SPRING_DATASOURCE_URL
+#       value: "jdbc:mysql:thin://operationsmysql:3306/messagegateway"
+#     - name: MYSQL_USERNAME
+#       value: "mifos"
+#     - name: ZEEBE_BROKER_CONTACTPOINT
+#       value: "phee-zeebe-gateway:26500"
+#     - name: MYSQL_PASSWORD
+#       valueFrom:
+#         secretKeyRef:
+#           name: message-gateway-secret
+#           key: database-password
+#     - name: CALLBACKCONFIG_HOST
+#       value: "ph-ee-connector-notifications"
+#     - name: HOSTCONFIG_HOST
+#       value: "message-gateway"
+#     - name: PROVIDERSOURCE_FROMDATABASE
+#       value: "disabled"
+#     - name: PROVIDERSOURCE_FROMYML
+#       value: "enabled"
+#     - name: LOGGING_LEVEL_ROOT
+#       value: "INFO"
+#     - name: PROVIDERKEYS_TELERIVETAPIKEY
+#       valueFrom:
+#         secretKeyRef:
+#           name: message-gateway-secret
+#           key: api-key
+#     - name: PROVIDERKEYS_TELERIVETPROJECTID
+#       valueFrom:
+#         secretKeyRef:
+#           name: message-gateway-secret
+#           key: project-id
+#     - name: ZEEBE_BROKER_CONTACTPOINT
+#       value: "phee-zeebe-gateway:26500"
  

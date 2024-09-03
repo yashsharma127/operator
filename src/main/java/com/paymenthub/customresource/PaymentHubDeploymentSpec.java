@@ -1,10 +1,11 @@
-package com.example.customresource;
+package com.paymenthub.customresource;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import java.util.*; 
 
-public class PhEeImporterRdbmsSpec {
+public class PaymentHubDeploymentSpec {
     private Boolean enabled;
-    private VolMount volMount;  // Added VolMount field
+    private Map<String, String> labels;
+    private VolMount volMount;   
     private Integer replicas;
     private String image;
     private Integer containerPort;
@@ -23,18 +24,20 @@ public class PhEeImporterRdbmsSpec {
     private Ingress ingress;
     private List<Service> services;
     private List<EnvironmentVariable> environment;
+    private Boolean initContainerEnabled;
 
-    public PhEeImporterRdbmsSpec() {
+    public PaymentHubDeploymentSpec() {
     }
 
-    public PhEeImporterRdbmsSpec(Boolean enabled, VolMount volMount, Integer replicas, String image, Integer containerPort, String springProfilesActive,
+    public PaymentHubDeploymentSpec(Boolean enabled, Map<String, String> labels, VolMount volMount, Integer replicas, String image, Integer containerPort, String springProfilesActive,
                                  Datasource datasource, Resources resources, Logging logging,
                                  String javaToolOptions, String bucketName,
                                  Probe livenessProbe, Probe readinessProbe,
                                  Boolean rbacEnabled, Boolean secretEnabled,
                                  Boolean configMapEnabled, Boolean ingressEnabled,
-                                 Ingress ingress, List<Service> services, List<EnvironmentVariable> environment) {
+                                 Ingress ingress, List<Service> services, List<EnvironmentVariable> environment, Boolean initContainerEnabled) {
         this.enabled = enabled;
+        this.labels = labels;
         this.volMount = volMount;
         this.replicas = replicas;
         this.image = image;
@@ -54,6 +57,7 @@ public class PhEeImporterRdbmsSpec {
         this.ingress = ingress;
         this.services = services;
         this.environment = environment;
+        this.initContainerEnabled = initContainerEnabled;
     }
 
     public Boolean getEnabled() {
@@ -62,6 +66,14 @@ public class PhEeImporterRdbmsSpec {
 
     public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public Map<String, String> getLabels() {
+    return labels;
+    }
+
+    public void setLabels(Map<String, String> labels) {
+        this.labels = labels;
     }
 
     public VolMount getVolMount() {
@@ -216,10 +228,20 @@ public class PhEeImporterRdbmsSpec {
         this.environment = environment;
     }
 
+    public Boolean getInitContainerEnabled() {
+        return initContainerEnabled;
+    }
+
+    public void setInitContainerEnabled(Boolean initContainerEnabled) {
+        this.initContainerEnabled = initContainerEnabled;
+    }
+
+
     @Override
     public String toString() {
-        return "PhEeImporterRdbmsSpec{" +
+        return "PaymentHubDeploymentSpec{" +
                 "enabled=" + enabled +
+                ", labels=" + labels +
                 ", volMount=" + volMount +
                 ", replicas=" + replicas +
                 ", image='" + image + '\'' +
@@ -239,15 +261,17 @@ public class PhEeImporterRdbmsSpec {
                 ", ingress=" + ingress +
                 ", services=" + services +
                 ", environment=" + environment +
+                ", initContainerEnabled=" + initContainerEnabled +
                 '}';
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof PhEeImporterRdbmsSpec)) return false;
-        PhEeImporterRdbmsSpec that = (PhEeImporterRdbmsSpec) o;
+        if (!(o instanceof PaymentHubDeploymentSpec)) return false;
+        PaymentHubDeploymentSpec that = (PaymentHubDeploymentSpec) o;
         return Objects.equals(getEnabled(), that.getEnabled()) &&
+               Objects.equals(getLabels(), that.getLabels()) && 
                Objects.equals(getVolMount(), that.getVolMount()) &&
                Objects.equals(getReplicas(), that.getReplicas()) &&
                Objects.equals(getImage(), that.getImage()) &&
@@ -266,15 +290,16 @@ public class PhEeImporterRdbmsSpec {
                Objects.equals(getIngressEnabled(), that.getIngressEnabled()) &&
                Objects.equals(getIngress(), that.getIngress()) &&
                Objects.equals(getServices(), that.getServices()) &&
-               Objects.equals(getEnvironment(), that.getEnvironment());
+               Objects.equals(getEnvironment(), that.getEnvironment()) &&
+               Objects.equals(getInitContainerEnabled(), that.getInitContainerEnabled());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getEnabled(), getVolMount(), getReplicas(), getImage(), getContainerPort(), getSpringProfilesActive(),
+        return Objects.hash(getEnabled(), getLabels(), getVolMount(), getReplicas(), getImage(), getContainerPort(), getSpringProfilesActive(),
                             getDatasource(), getResources(), getLogging(), getJavaToolOptions(), getBucketName(),
                             getLivenessProbe(), getReadinessProbe(), getRbacEnabled(), getSecretEnabled(), getConfigMapEnabled(),
-                            getIngressEnabled(), getIngress(), getServices(), getEnvironment());
+                            getIngressEnabled(), getIngress(), getServices(), getEnvironment(), getInitContainerEnabled());
     }
 
     // Inner classes for nested objects 
@@ -677,6 +702,7 @@ public class PhEeImporterRdbmsSpec {
         private Map<String, String> annotations;
         private List<TLS> tls;
         private List<Rule> rules;
+        private Map<String, String> labels;
 
         public Ingress() {
         }
@@ -688,6 +714,7 @@ public class PhEeImporterRdbmsSpec {
             this.annotations = annotations;
             this.tls = tls;
             this.rules = rules;
+            this.labels = labels;
         }
 
         public String getHost() {
@@ -738,6 +765,14 @@ public class PhEeImporterRdbmsSpec {
             this.rules = rules;
         }
 
+        public Map<String, String> getLabels() {
+            return labels;
+        }
+
+        public void setLabels(Map<String, String> labels) {
+            this.labels = labels;
+        }        
+
         @Override
         public String toString() {
             return "Ingress{" +
@@ -747,6 +782,7 @@ public class PhEeImporterRdbmsSpec {
                     ", annotations=" + annotations +
                     ", tls=" + tls +
                     ", rules=" + rules +
+                    ", labels=" + labels +
                     '}';
         }
 
@@ -760,12 +796,13 @@ public class PhEeImporterRdbmsSpec {
                 Objects.equals(getClassName(), ingress.getClassName()) &&
                 Objects.equals(getAnnotations(), ingress.getAnnotations()) &&
                 Objects.equals(getTls(), ingress.getTls()) &&
-                Objects.equals(getRules(), ingress.getRules());
+                Objects.equals(getRules(), ingress.getRules()) &&
+                Objects.equals(getLabels(), ingress.getLabels());
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(getHost(), getPath(), getClassName(), getAnnotations(), getTls(), getRules());
+            return Objects.hash(getHost(), getPath(), getClassName(), getAnnotations(), getTls(), getRules(), getLabels());
         }
 
         // Inner class for TLS settings
@@ -1076,12 +1113,11 @@ public class PhEeImporterRdbmsSpec {
         private String type;
         private Map<String, String> annotations;
         private String sessionAffinity;
+        private Map<String, String> labels;  
 
-    // Default constructor required for Jackson
-    public Service() {
-    }
+        public Service() {
+        }
 
-        // Private constructor to enforce builder usage
         private Service(Builder builder) {
             this.name = builder.name;
             this.ports = builder.ports;
@@ -1089,9 +1125,18 @@ public class PhEeImporterRdbmsSpec {
             this.type = builder.type;
             this.annotations = builder.annotations;
             this.sessionAffinity = builder.sessionAffinity;
+            this.labels = builder.labels;  
         }
 
         // Getters for all fields
+        public Map<String, String> getLabels() {
+            return labels;
+        }
+
+        public void setLabels(Map<String, String> labels) {
+            this.labels = labels;
+        }
+        
         public String getName() {
             return name;
         }
@@ -1125,6 +1170,7 @@ public class PhEeImporterRdbmsSpec {
                     ", type='" + type + '\'' +
                     ", annotations=" + annotations +
                     ", sessionAffinity='" + sessionAffinity + '\'' +
+                    ", labels=" + labels +  
                     '}';
         }
 
@@ -1134,16 +1180,17 @@ public class PhEeImporterRdbmsSpec {
             if (!(o instanceof Service)) return false;
             Service service = (Service) o;
             return Objects.equals(name, service.name) &&
-                   Objects.equals(ports, service.ports) &&
-                   Objects.equals(selector, service.selector) &&
-                   Objects.equals(type, service.type) &&
-                   Objects.equals(annotations, service.annotations) &&
-                   Objects.equals(sessionAffinity, service.sessionAffinity);
+                Objects.equals(ports, service.ports) &&
+                Objects.equals(selector, service.selector) &&
+                Objects.equals(type, service.type) &&
+                Objects.equals(annotations, service.annotations) &&
+                Objects.equals(sessionAffinity, service.sessionAffinity) &&
+                Objects.equals(labels, service.labels);  
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, ports, selector, type, annotations, sessionAffinity);
+            return Objects.hash(name, ports, selector, type, annotations, sessionAffinity, labels);
         }
 
         // Builder class for Service
@@ -1155,6 +1202,7 @@ public class PhEeImporterRdbmsSpec {
             private String type;
             private Map<String, String> annotations = new HashMap<>();
             private String sessionAffinity;
+            private Map<String, String> labels = new HashMap<>();
 
             public Builder withName(String name) {
                 this.name = name;
@@ -1183,6 +1231,11 @@ public class PhEeImporterRdbmsSpec {
 
             public Builder withSessionAffinity(String sessionAffinity) {
                 this.sessionAffinity = sessionAffinity;
+                return this;
+            }
+
+            public Builder withLabels(Map<String, String> labels) {
+                this.labels = labels;
                 return this;
             }
 

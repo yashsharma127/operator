@@ -3,13 +3,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.example</groupId>
-    <artifactId>ph-ee-importer-rdbms-operator</artifactId>
+    <groupId>gazelle.mifos.io</groupId>
+    <artifactId>ph-ee-operator</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>ph-ee-importer-rdbms-operator</name>
-    <description>Kubernetes Operator for PhEeImporterRdbms</description>
+    <name>ph-ee-operator</name>
+    <description>Kubernetes Operator for Paymenthub</description>
 
     <properties> 
         <fabric8.kubernetes-client.version>6.13.1</fabric8.kubernetes-client.version>
@@ -90,7 +90,7 @@
                         <image>gcr.io/distroless/java:11</image>
                     </from>
                     <to>
-                        <image>ph-ee-importer-rdbms-operator</image>
+                        <image>ph-ee-operator</image>
                     </to>
                 </configuration>
             </plugin>
