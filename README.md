@@ -5,6 +5,16 @@ This guide provides instructions to set up the PHEE Operator in a k3s cluster us
 ### Note
 This is a Kubernetes (K8s) Operator setup built on top of the [Mifos-Gazelle script](https://github.com/openMF/mifos-gazelle). The operator is currently configured to deploy twelve deployments (with their ingress and service if needed) under the paymenthub deployment. The repository is actively being developed and tested to support more Mifos artifacts using the operator.
 
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Setup and Deployment](#setup-and-deployment)
+  - [Using the Automated Script](#using-the-automated-script) 
+  - [Manual Setup](#manual-setup) 
+- [Usage Information](#usage-information)
+  - [Note](#note-1)
+
+
 ## Prerequisites
 
 - Mifos-Gazelle script environment setup [here](https://github.com/openMF/mifos-gazelle).
@@ -13,16 +23,18 @@ This is a Kubernetes (K8s) Operator setup built on top of the [Mifos-Gazelle scr
 
 ## Setup and Deployment
 
-To perform various operations, the script `deploy-operator.sh` supports multiple modes. 
-The script supports the following flags:
-- `-m Flag`: This is used to specify the mode of operation, such as deploy or cleanup.
-- `-u Flag`: This is used to specify the update mode, such as updating the cr (Custom Resource) or the operator deployment.
+You can set up and manage the PHEE Operator using either the provided script for an automated approach or manual steps for more control.
 
-Below are the available commands:
+### Using the Automated Script
 
-### 1. Deploy the Operator
+The `deploy-operator.sh` script supports various modes of operation:
 
-To build, deploy, and verify the operator and its required deployments using the CR in your k3s cluster:
+- `-m Flag`: Specifies the mode, such as `deploy` or `cleanup`.
+- `-u Flag`: Specifies the update mode, such as updating the CR or the operator deployment.
+
+#### 1. Deploy the Operator
+
+To build, deploy, and verify the operator and its required deployments:
 
 ```
 ./deploy-operator.sh -m deploy
@@ -42,8 +54,7 @@ If you need to apply updates to the Custom Resource (CR):
 
 ```
 ./deploy-operator.sh -u cr
-```
-or can also run `kubectl apply -f deploy/cr/ph-ee-importer-rdbms-cr.yaml` in the operator directory.
+``` 
 
 ### 4. Update the Operator Deployment
 
@@ -51,6 +62,37 @@ To apply updates to the operator deployment:
 
 ```
 ./deploy-operator.sh -u operator
+```
+
+### Using the Automated Script
+
+If you prefer to manually set up the operator without using the script, follow these steps:
+
+#### 1. Install Maven Dependencies
+```
+mvn clean install
+```
+
+#### 2. Create a Local Docker Image Using Maven Jib
+```
+mvn compile jib:dockerBuild -Dimage=ph-ee-operator:latest
+```
+
+#### 3. Save the Docker Image to a Tar File
+```
+docker save ph-ee-operator:latest -o ph-ee-operator.tar
+```
+
+#### 4. Load the Tar File into k3s
+```
+sudo k3s ctr images import ph-ee-operator.tar
+```
+
+#### 5. Apply CRD, Operator, and Custom Resource
+```
+kubectl apply -f deploy/crds/ph-ee-CustomResourceDefinition.yaml
+kubectl apply -f deploy/operator/operator_deployment_manifests.yaml
+kubectl apply -f deploy/cr/ph-ee-CustomResource.yaml
 ```
 
 ## Usage Information
@@ -62,5 +104,6 @@ To apply updates to the operator deployment:
 - The `CR` and `operator` update modes allow you to apply updates specifically to the CR or the operator deployment, respectively, without a full redeployment.
 
 ### Note
-This repo is still in progress will be updated as the project progresses.
-Also, currently operator is configured for 12 deployments only, and not yet fully tested.
+- The repository is actively being developed and tested to support more Mifos artifacts using the operator.
+- The operator is currently configured to deploy twelve specific deployments only.
+- This documentation will be updated as the project progresses.
