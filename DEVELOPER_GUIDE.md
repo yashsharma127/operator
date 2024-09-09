@@ -10,7 +10,7 @@
 
 ### Explanation of Files
 1. [Custom Resource Definition (CRD)](#custom-resource-definition-crd) 
-2. [operator.yaml File](#operatoryaml-file)
+2. [Operator File](#Operator)
 3. [Custom Resource Files](#custom-resource-files)
    - [PaymentHubDeployment.java File](#PaymentHubDeploymentjava-file)
    - [PaymentHubDeploymentSpec.java File](#PaymentHubDeploymentspecjava-file)
@@ -62,7 +62,7 @@ To start making changes to the PHEE Operator, it's crucial to understand several
 
 ## Explanation of Files
 
-## Deploy files
+## Deployment files
 
 ### Custom Resource Definition (CRD)
 
@@ -110,7 +110,7 @@ Our CRD for the operator contains all the fields that our controller file might 
 
 **Status** provides information about the state of the custom resource. It includes fields such as `availableReplicas`, `errorMessage`, `lastAppliedImage`, and `ready`. This section is used to track the current state and health of the resource, making it easier to monitor and manage its lifecycle.
 
-### Operator File
+### Operator
 
 This YAML file defines several Kubernetes resources essential for deploying and managing the PHEE Importer Operator. It starts with a `ServiceAccount`, which is used by the operator to interact with the Kubernetes API. The `Deployment` specifies how the operator should be deployed, including the Docker image to use, resource requests and limits, environment variables, and the service account to associate with it. The `ClusterRole` and `ClusterRoleBinding` provide the operator with the necessary permissions to access and manage various Kubernetes resources across the cluster. The `Role` and `RoleBinding` are used to grant specific permissions within the `default` namespace, ensuring the operator can manage resources like custom resources, their statuses, and associated roles. Overall, this file configures the operator's runtime environment, access controls, and permissions, ensuring it operates correctly and securely within the Kubernetes cluster.
 
@@ -169,13 +169,5 @@ The `PaymentHubDeploymentController.java` file is the core of the PHEE Importer 
 ### deploy-operator.sh
 
 The `deploy-operator.sh` script is a shell script used to deploy the PHEE Importer Operator to a Kubernetes cluster. The script starts by creating the necessary Kubernetes resources, such as the custom resource definition (CRD) for `PaymentHubDeployment`, and then applies the `operator.yaml` file to deploy the operator itself. The script also waits for the operator to be fully deployed and ensures that all the necessary resources are created before exiting. This script is essential for automating the deployment process of the operator, making it easy to set up the operator in a Kubernetes cluster. It provides a simple and repeatable way to deploy the operator, ensuring that all necessary steps are performed correctly.
-
-## Future Enhancements
-
-### Planned Features
-- **Multiple Deployments:** Implementation of logic to manage multiple deployments using either a single controller or separate controllers. 
-- **Advanced Probing:** Enhanced liveness and readiness probes with customizable settings per deployment. 
-- **Comprehensive Testing:** Expansion of testing coverage, including unit tests, integration tests, and end-to-end tests.
-- **Expanded Documentation:** Ongoing updates to documentation as new features are added, ensuring clarity and ease of use.
-
-This guide is intended to be a living document and will be updated as the operator evolves. Stay tuned for future updates and enhancements.
+ 
+ 
