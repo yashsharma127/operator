@@ -90,18 +90,14 @@ Our CRD for the operator contains all the fields that our controller file might 
   - `volMount`
   - `replicas`
   - `image`
-  - `containerPort`
-  - `springProfilesActive`
-  - `environment`
-  - `datasource`
-  - `resources`
-  - `logging`
-  - `javaToolOptions`
-  - `bucketName`
+  - `containerPort` 
+  - `environment` 
+  - `resources` 
   - `livenessProbe`
   - `readinessProbe`
   - `ingress`
   - `services`
+  - `initContainerEnabled`
   - `rbacEnabled`
   - `secretEnabled`
   - `configMapEnabled`
@@ -175,4 +171,4 @@ The `StatusUpdateUtil.java` file is a utility class that provides methods for up
 
 ## deploy-operator.sh
 
-The `deploy-operator.sh` script is a shell script used to deploy the PHEE Importer Operator to a Kubernetes cluster. The script starts by creating the necessary Kubernetes resources, such as the custom resource definition (CRD) for `PaymentHubDeployment`, and then applies the `operator.yaml` file to deploy the operator itself. The script also waits for the operator to be fully deployed and ensures that all the necessary resources are created before exiting. This script is essential for automating the deployment process of the operator, making it easy to set up the operator in a Kubernetes cluster. It provides a simple and repeatable way to deploy the operator, ensuring that all necessary steps are performed correctly.
+The `deploy-operator.sh` script is a shell script used to deploy the PHEE Importer Operator to a Kubernetes cluster. The script starts by creating the necessary Kubernetes resources, such as the custom resource definition (CRD) for `PaymentHubDeployment`, and then applies the `operator_deployment_manifests.yaml` file to deploy the operator itself. This script is essential for automating the deployment process of the operator, making it easy to set up the operator in a Kubernetes cluster. It provides a simple and repeatable way to deploy the operator, ensuring that all necessary steps are performed correctly.

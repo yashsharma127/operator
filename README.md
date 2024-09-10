@@ -149,3 +149,4 @@ By following these steps, you can extend the functionality of the operator to ma
 - The `deploy` mode will upgrade the Helm chart, build the Docker image, deploy the operator with its CRD and CR, and verify its status in the k3s cluster.
 - The `cleanup` mode will remove the operator and all its related resources, allowing for a fresh setup if needed.
 - The `CR` present in the repo is created and tested in 16Gb 4vcpus system, so the resource usage for deployments are set according to that.
+- Probes have not been set up or added to the deployment configurations yet (the logic is present in the code but not currently used).
